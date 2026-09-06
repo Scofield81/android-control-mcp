@@ -48,16 +48,28 @@ Kérlek, telepítsd a következő lépések szerint:
 9. Futtasd le a beépített diagnosztikai ellenőrzést (`android-control-mcp doctor`), és
    mutasd meg az eredményét.
 
-10. FONTOS BIZTONSÁGI SZABÁLY: a telepítés/konfigurálás során SOHA ne módosíts semmilyen
+10. A `configure` parancs a project-scope VS Code konfigurációt és a Claude Code
+    regisztrációt SAJÁT MAGA visszaellenőrzi (visszaolvassa a fájlt / lefuttatja a
+    `claude mcp list`-et), és ezt a kimenetében jelzi ("Onellenorzes: OK" vagy
+    "MCP konfiguracio: KESZ es ONELLENORIZVE"). NE küldj engem külön manuális
+    ellenőrzésre (pl. "nyisd meg a Command Palette-et és nézd meg"), ha a `configure`
+    már jelezte, hogy az önellenőrzés sikeres volt - csak akkor kérj tőlem manuális
+    lépést, ha a `configure` kimenete kifejezetten ezt írja (ez jelenleg csak a VS Code
+    "user-scope" esetén fordul elő, mert annak a fájlját nem lehet biztonságosan
+    megcímezni).
+
+11. FONTOS BIZTONSÁGI SZABÁLY: a telepítés/konfigurálás során SOHA ne módosíts semmilyen
     Android-eszközt az explicit engedélyem nélkül - ne kapcsolj be ADB-hibakeresést, ne
     fogadj el semmilyen jóváhagyó párbeszédablakot a telefonon, ne küldj touch/gombnyomás/
     szövegbeviteli parancsot egy csatlakoztatott telefonnak. Ha a telepítés végén tesztelni
     szeretnéd egy valós eszközön, ELŐSZÖR kérdezz rá, és csak explicit "igen" válasz után
     csinálj bármit a telefonnal.
 
-11. A végén adj egy tömör jelentést: mi lett telepítve, mi lett kihagyva (mert már
-    megvolt), milyen MCP-kliens konfiguráció készült, mi volt a doctor eredménye, és mi
-    maradt validálatlan/nyitott.
+12. A végén adj egy TÖMÖR, KÉSZ állapotú összegzést checklist-formában (Telepítés /
+    Függőségek / MCP konfiguráció / Doctor / MCP server / tool-szám), és csak azokat a
+    pontokat jelöld nyitottnak/kézi teendőnek, amik ténylegesen azok - ne fogalmazz meg
+    olyan utasítást felém, amit te magad (a `doctor`/`configure` kimenete alapján) már
+    igazoltál.
 ```
 
 ---

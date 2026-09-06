@@ -4,10 +4,9 @@ Ez a dokumentum azt írja le, hogyan validálható a telepítési folyamat **egy
 fejlesztéstől független AI-agenttel** — pl. egy másik gépen/könyvtárban induló ChatGPT/más
 coding agent, amely CSAK a GitHub repository URL-jét kapja meg.
 
-**FONTOS**: ez a checklist jelenleg **még nem lett végrehajtva** egy ténylegesen független
-agenttel — ezt a dokumentumot a jövőbeli validációhoz készítettük elő, nem egy már
-megtörtént teszt eredményeként. Ne tekintsd úgy, hogy ez a validáció megtörtént, amíg egy
-tényleges futtatás eredménye nincs ide/máshova dokumentálva.
+**FRISSÍTÉS (2026-09-06): ez a validáció megtörtént** egy ténylegesen független ChatGPT
+coding agenttel — lásd az "Első sikeres független futtatás" szakaszt lent. A checklist
+innentől nem csak elméleti terv, hanem tényleges eredménnyel is rendelkezik.
 
 ## Előfeltétel a tesztelő agent számára
 
@@ -71,3 +70,35 @@ tényleges futtatás eredménye nincs ide/máshova dokumentálva.
 Egy tényleges független validációs futás eredményét **ebbe a fájlba** (vagy egy hivatkozott,
 dátumozott melléklet-fájlba) kell rögzíteni, egyértelműen jelezve a validáció dátumát, a
 tesztelő agent típusát/verzióját, és a pontos eredményt (checklist-elemenként).
+
+## Első sikeres független futtatás — 2026-09-06
+
+**Tesztelő agent**: ChatGPT (a projekt fejlesztésétől teljesen független munkamenet/agent).
+**Bemenet**: kizárólag a repository URL-je + az akkori `INSTALL_WITH_AI.md` prompt tartalma.
+**Telepítési cél**: `D:\AndroidControlMCP` (a felhasználó által megadott, egyedi útvonal).
+**Forrás**: a felhasználó saját beszámolója az agenttel végzett futásról (ezt a Claude-munkamenet
+nem látta közvetlenül végigfutni — a lenti eredmény a felhasználó jelentésén alapul).
+
+| # | Checklist-elem | Eredmény |
+|---|---|---|
+| 1 | Dependency detection (nincs duplikátum-telepítés) | ✅ PASS — felismerte a meglévő Python/ADB/scrcpy-t |
+| 2 | Telepítési útvonal (megkérdezi, nem hardcode-olt) | ✅ PASS — `D:\AndroidControlMCP`-t használt |
+| 2b | Saját izolált venv | ✅ PASS |
+| 3 | MCP kliens kiválasztás megkérdezve | ✅ PASS — VS Code project-scope-ot választott |
+| 3b | `.vscode/mcp.json` létrejött | ✅ PASS |
+| 4 | `doctor` lefuttatva, READY | ✅ PASS — 71 tool, ADB+scrcpy rendben |
+| 5 | Biztonság (nem nyúlt a csatlakoztatott telefonhoz) | ✅ PASS — nem küldött inputot |
+| 6 | Záró jelentés | ✅ PASS, de lásd az alábbi észrevételt |
+
+**Összesítés: PASS** — egy előzetes projektismeret nélküli AI-agent, kizárólag az
+`INSTALL_WITH_AI.md` promptot követve, végig tudta vinni a telepítést hardver-módosítás
+és kézi JSON-szerkesztés nélkül.
+
+**Talált hiányosság (javítva ugyanebben a körben)**: a záró jelentés a felhasználót a VS
+Code Command Palette-be küldte ("MCP: List Servers" kézi ellenőrzésre), ahelyett hogy a
+`configure` parancs saját maga ellenőrizte volna vissza a leírt konfigurációt. Ezt a
+`cli_configure.py` self-verification logikájával javítottuk (a project-scope VS Code és a
+Claude Code ág is visszaolvassa/leellenőrzi a saját bejegyzését, és csak akkor kér kézi
+lépést, ha ez technikailag tényleg nem oldható meg — pl. VS Code user-scope). **Ezt a
+konkrét javítást egy újabb független agent-futtatás még nem validálta újra** — a fenti PASS
+az EREDETI (self-verification nélküli) promptra vonatkozik.

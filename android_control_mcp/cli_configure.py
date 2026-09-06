@@ -114,7 +114,9 @@ def _log_registration(kind: str, scope: str, detail: dict) -> None:
               "automatikus ajanlasat erinti.")
 
 
-def configure_vscode(scope: str, workspace_dir: Path) -> None:
+def configure_vscode(scope: str, workspace_dir: Path) -> bool:
+    """Visszaad True-t, ha a konfiguracio (es - project scope eseten - annak
+    onellenorzese) sikeres volt."""
     entry = _server_entry()
     if scope == "project":
         path = workspace_dir / ".vscode" / "mcp.json"
@@ -127,11 +129,26 @@ def configure_vscode(scope: str, workspace_dir: Path) -> None:
         print(f"  Irva: {path}")
         if backup:
             print(f"  Biztonsagi mentes a korabbi tartalomrol: {backup}")
-        print("  Ellenorzes: nyisd meg VS Code-ban ezt a mappat, majd a Command "
-              "Palette-ben futtasd: 'MCP: List Servers' - az 'android-control'-nak "
-              "meg kell jelennie.")
+
+        # On-ellenorzes: visszaolvassuk a fajlt, es ellenorizzuk, hogy tenylegesen
+        # a szandekolt tartalom kerult-e bele - igy NEM kell a felhasznalonak/agentnek
+        # kezzel a VS Code Command Palette-ere ("MCP: List Servers") tamaszkodnia
+        # ahhoz, hogy tudja, a konfiguracios FAJL helyes-e. Azt, hogy VS Code (a mar
+        # esetleg nyitva levo ablak) mikor veszi ezt eszre, ez a script termeszetesen
+        # nem tudja garantalni - az egy kliens-oldali reload kerdese, nem a mienk.
+        verify = _load_json(path)
+        entry_ok = isinstance(verify.get("servers"), dict) and verify["servers"].get(SERVER_NAME) == entry
+        if entry_ok:
+            print(f"  Onellenorzes: OK - az '{SERVER_NAME}' bejegyzes helyesen szerepel a fajlban.")
+        else:
+            print(f"  [FIGYELEM] Onellenorzes SIKERTELEN - nezd at kezzel: {path}")
+        print("  (Ha VS Code mar nyitva volt ezen a workspace-en, 'Developer: Reload "
+              "Window' szukseges lehet az uj konfiguracio felismeresehez - ez minden "
+              "'.vscode/mcp.json' valtozasra igaz, nem csak erre a szerverre.)")
+
         _log_registration("vscode", "project",
                            {"config_path": str(path), "auto_removable": True})
+        return entry_ok
     elif scope == "user":
         print("  A VS Code user-szintu MCP-konfiguraciojanak PONTOS fajlutvonala nincs "
               "stabilan dokumentalva a hivatalos VS Code forrasban, ezert ezt a fajlt "
@@ -148,11 +165,14 @@ def configure_vscode(scope: str, workspace_dir: Path) -> None:
         _log_registration("vscode", "user",
                            {"config_path": None, "auto_removable": False,
                             "manual_note": "MCP: Open User Configuration -> torold az 'android-control' bejegyzest"})
+        return None  # nincs onellenorzes - a VS Code sajat user-config fajlja nem cimezheto biztonsagosan
     else:
         raise ValueError(f"Ismeretlen scope: {scope!r}")
 
 
-def configure_claude_code(scope: str) -> None:
+def configure_claude_code(scope: str) -> bool | None:
+    """Visszaad True/False-t, ha lefutott az onellenorzes ('claude mcp list'),
+    None-t, ha a 'claude' CLI nem volt elerheto (ekkor csak kezi utasitas jon)."""
     if scope not in ("local", "project", "user"):
         raise ValueError(f"Ismeretlen scope: {scope!r} (local/project/user)")
 
@@ -171,7 +191,7 @@ def configure_claude_code(scope: str) -> None:
     if not claude_exe:
         print("  A 'claude' CLI nem talalhato a PATH-on. Futtasd kezzel:")
         print(f"    {printable}")
-        return
+        return None
 
     print(f"  Hivatalos Claude Code CLI hasznalata (talalva: {claude_exe}).")
     print(f"  Futtatando parancs: {printable}")
@@ -180,18 +200,35 @@ def configure_claude_code(scope: str) -> None:
     except (OSError, subprocess.TimeoutExpired) as exc:
         print(f"  [HIBA] A 'claude mcp add' futtatasa sikertelen: {exc}")
         print(f"  Futtasd kezzel: {printable}")
-        return
+        return False
 
-    if result.returncode == 0:
-        print("  Sikeres. Ellenorzes: 'claude mcp list'")
-        print(result.stdout.strip())
-        _log_registration("claude-code", scope,
-                           {"config_path": None, "auto_removable": False,
-                            "manual_note": f"claude mcp remove {SERVER_NAME}"})
-    else:
+    if result.returncode != 0:
         print(f"  [HIBA] 'claude mcp add' kilepesi kod {result.returncode}:")
         print(result.stderr.strip() or result.stdout.strip())
         print(f"  Probald kezzel: {printable}")
+        return False
+
+    print("  Sikeres.")
+    _log_registration("claude-code", scope,
+                       {"config_path": None, "auto_removable": False,
+                        "manual_note": f"claude mcp remove {SERVER_NAME}"})
+
+    # On-ellenorzes: mi magunk futtatjuk le a 'claude mcp list'-et, nem a
+    # felhasznalot/agentet kuldjuk oda - igy a vegso jelentes tenylegesen
+    # tudhatja, hogy a bejegyzes latszik-e a Claude Code sajat nyilvantartasaban.
+    try:
+        list_result = subprocess.run(
+            ["claude", "mcp", "list"], capture_output=True, text=True, timeout=15, check=False,
+        )
+        if list_result.returncode == 0 and SERVER_NAME in list_result.stdout:
+            print(f"  Onellenorzes: OK - '{SERVER_NAME}' szerepel a 'claude mcp list' kimeneteben.")
+            return True
+        print("  [FIGYELEM] Onellenorzes: az uj bejegyzes NEM latszik a 'claude mcp list' "
+              "kimeneteben - ellenorizd kezzel.")
+        return False
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"  [FIGYELEM] Onellenorzes ('claude mcp list') sikertelen: {exc}")
+        return False
 
 
 def configure_generic(out_path: Path) -> None:
@@ -226,19 +263,34 @@ def main_configure(client: str | None, scope: str | None, workspace_dir: str | N
         print("Nincs klens-konfiguracio kivalasztva. Kesobb: 'android-control-mcp configure --client ...'")
         return 0
 
+    verified: bool | None = None
     if client == "vscode":
         if not scope:
             scope = input("User-level vagy Project-level konfiguracio? (user/project): ").strip().lower() or "project"
-        configure_vscode(scope, workspace)
+        verified = configure_vscode(scope, workspace)
     elif client == "claude-code":
         if not scope:
             scope = input("Scope (local/project/user) [local]: ").strip().lower() or "local"
-        configure_claude_code(scope)
+        verified = configure_claude_code(scope)
     elif client == "generic":
         out_path = workspace / "android-control-mcp.generic-config.example.json"
         configure_generic(out_path)
+        return 0
     else:
         print(f"Ismeretlen kliens: {client!r} (vscode / claude-code / generic)")
         return 1
 
+    # Vegso, egyertelmu osszegzes - CSAK akkor kerul bele kezi teendo, ha a
+    # konfiguraciot ez a script tenylegesen nem tudta onmaga ellenorizni
+    # (pl. VS Code user-scope, ahol nincs biztonsagosan cimezheto fajl).
+    print()
+    if verified is True:
+        print(f"MCP konfiguracio: KESZ es ONELLENORIZVE ('{client}', scope='{scope}').")
+        return 0
+    if verified is False:
+        print(f"MCP konfiguracio: a bejegyzes letrehozasa/ellenorzese SIKERTELEN ('{client}', "
+              f"scope='{scope}') - lasd a fenti reszleteket.")
+        return 1
+    print(f"MCP konfiguracio: '{client}' (scope='{scope}') - a fenti kezi lepes(ek) szuksegesek, "
+          "mert ez a fajl/allapot innen nem ellenorizheto biztonsagosan.")
     return 0

@@ -1,19 +1,28 @@
 """Tesztek a hivatalos scrcpy binaris felismeresehez.
 
 Minden teszt szandekosan IZOLALJA a felismeresi utvonalakat (shutil.which,
-glob.glob, Path.is_file) - korabban ezek a tesztek KOZVETLENUL a futtato gep
-tenyleges allapotara tamaszkodtak (csak azert 'mukodtek', mert a fejlesztoi
-gepen eppen nem volt telepitve scrcpy). Ez egy valodi hiba volt: miutan egy
-valos eszkozos teszthez ténylegesen telepitve lett a hivatalos scrcpy
+glob.glob, Path.is_file, ES a tenyleges verzio-lekerdezo alfolyamat-hivast) -
+korabban ezek a tesztek KOZVETLENUL a futtato gep tenyleges allapotara
+tamaszkodtak (csak azert 'mukodtek', mert a fejlesztoi gepen eppen nem volt
+telepitve scrcpy). Ez egy valodi hiba volt: miutan egy valos eszkozos
+teszthez ténylegesen telepitve lett a hivatalos scrcpy
 (winget install Genymobile.scrcpy), mindket teszt elbukott, mert a
 'nincs telepitve' allitas mar nem volt igaz - lasd REAL_DEVICE_TESTING.local.md
-2026-09-06-i bejegyzeset. Innentol a tesztek a gep tenyleges allapotatol
-fuggetlenul, determinisztikusan futnak."""
+2026-09-06-i bejegyzeset.
+
+MASODIK KOR (ugyanaznap): a shutil.which/glob/Path.is_file mock-olas ONMAGABAN
+NEM eleg - a `_candidate_paths()` elso eleme mindig a csupasz "scrcpy" string,
+amit a detect_scrcpy() SZANDEKOSAN kihagy a Path.is_file() ellenorzes alol
+(hogy a subprocess/OS sajat PATH-feloldasara tamaszkodhasson), ezert ha a
+"scrcpy" parancs ténylegesen elerheto a rendszer PATH-jan (mint ezen a gepen,
+telepites utan), a valodi `scrcpy --version` alfolyamat lefut a mock-ok
+ellenere is. Ezert MOST mar a `_try_get_version()`-t is mock-oljuk - igy a
+teszt tenyleg fuggetlen a gep tenyleges allapotatol, nem csak latszolag."""
 
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from android_control_mcp.rescue.scrcpy_binary import detect_scrcpy
 
@@ -22,7 +31,9 @@ def test_detect_scrcpy_reports_unavailable_when_not_installed(monkeypatch):
     monkeypatch.delenv("ANDROID_CONTROL_SCRCPY_PATH", raising=False)
     with patch("android_control_mcp.rescue.scrcpy_binary.shutil.which", return_value=None), \
          patch("android_control_mcp.rescue.scrcpy_binary.glob.glob", return_value=[]), \
-         patch("android_control_mcp.rescue.scrcpy_binary.Path.is_file", return_value=False):
+         patch("android_control_mcp.rescue.scrcpy_binary.Path.is_file", return_value=False), \
+         patch("android_control_mcp.rescue.scrcpy_binary._try_get_version",
+               new=AsyncMock(return_value=None)):
         info = asyncio.run(detect_scrcpy())
     assert info.available is False
     assert info.version is None
@@ -33,6 +44,8 @@ def test_detect_scrcpy_reports_unavailable_when_not_installed(monkeypatch):
 def test_detect_scrcpy_with_nonexistent_explicit_path_falls_back_gracefully(monkeypatch):
     monkeypatch.delenv("ANDROID_CONTROL_SCRCPY_PATH", raising=False)
     with patch("android_control_mcp.rescue.scrcpy_binary.shutil.which", return_value=None), \
+         patch("android_control_mcp.rescue.scrcpy_binary._try_get_version",
+               new=AsyncMock(return_value=None)), \
          patch("android_control_mcp.rescue.scrcpy_binary.glob.glob", return_value=[]), \
          patch("android_control_mcp.rescue.scrcpy_binary.Path.is_file", return_value=False):
         info = asyncio.run(detect_scrcpy(explicit_path="C:/nonexistent/path/scrcpy.exe"))
