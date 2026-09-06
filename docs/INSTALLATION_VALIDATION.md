@@ -34,6 +34,12 @@ tényleges futtatás eredménye nincs ide/máshova dokumentálva.
 - [ ] Megkérdezi a telepítési mappát (nem hardcode-olt `C:\`).
 - [ ] Saját, izolált venv-et hoz létre — nem szennyezi a globális Python-környezetet.
 - [ ] Admin jogot NEM kér feleslegesen.
+- [ ] Veszélyes célpontot (meghajtó-gyökér, rendszer-/profil-gyökér, a forrás-repository
+      gyökere/belseje) elutasítja, nem próbál meg oda telepíteni.
+- [ ] Fejlesztői repóból indítva a telepített app-könyvtár **nem** tartalmaz privát,
+      gitignore-olt fájlt (`*.local.md`, `.env` stb.) — csak git-tracked tartalmat.
+- [ ] Az uninstaller egy hibás/hiányzó/idegen `-InstallDir` esetén **megtagadja a
+      törlést** (marker-validáció), nem töröl vakon.
 
 ### 3. Konfiguráció
 

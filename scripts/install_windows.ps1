@@ -7,16 +7,25 @@
     1. Ellenorzi a fuggosegeket (Python, ADB, scrcpy) - csak akkor telepit,
        ha TENYLEG hianyzik, es csak hivatalos forrasokbol (winget:
        Python.Python.3.12 / Google.PlatformTools / Genymobile.scrcpy).
-    2. Letrehoz egy sajat, izolalt konyvtarat (alap: %LOCALAPPDATA%\AndroidControlMCP),
-       benne sajat venv-vel - NEM piszkitja a felhasznalo mas Python projektjeit.
-    3. Letoltoti/hasznalja a repo forraskodjat, telepiti a csomagot a venv-be.
-    4. Vegul futtatja a 'doctor' ellenorzest.
+    2. VESZELYES CELUTVONALAKAT VISSZAUTASIT (drive root, rendszer-/profil-
+       konyvtar, a forras-repository gyokere/tartalmazasa) - lasd InstallCommon.ps1.
+    3. Letrehoz egy sajat, izolalt konyvtarat, benne sajat venv-vel - NEM
+       piszkitja a felhasznalo mas Python projektjeit.
+    4. Fejlesztoi repo-bol inditva KIZAROLAG a git altal TRACKELT fajlokat
+       masolja at (privat *.local.md/.env fajlok SOSE keruljenek at).
+    5. Minden natic parancs (winget/git/pip/venv) exit code-jat ellenorzi -
+       hiba eseten AZONNAL leall, nem jelent hamis sikert.
+    6. Ir egy telepitesi MARKER fajlt (.android-control-mcp-install.json),
+       amit az uninstaller validal, mielott barmit torolne.
+    7. Vegul futtatja a 'doctor' ellenorzest.
 
     Semmilyen ponton nem nyul Android eszkozhoz, nem kapcsol be ADB-t, nem
     modosit telefon-beallitast.
 
 .PARAMETER InstallDir
     Celkonyvtar. Ha nincs megadva es a szkript interaktivan fut, megkerdezi.
+    Veszelyes celutvonalak (drive root, rendszerkonyvtar, a forras-repo gyokere/
+    tartalmazasa) VISSZAUTASITASRA kerulnek, meg NonInteractive modban is.
 
 .PARAMETER RepoUrl
     A GitHub repo URL-je (git clone-hoz). Alap: a hivatalos Scofield81/android-control-mcp.
@@ -43,11 +52,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-
-function Write-Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
-function Write-Ok($msg) { Write-Host "    OK: $msg" -ForegroundColor Green }
-function Write-Warn2($msg) { Write-Host "    FIGYELEM: $msg" -ForegroundColor Yellow }
-function Write-Err2($msg) { Write-Host "    HIBA: $msg" -ForegroundColor Red }
+. "$PSScriptRoot\InstallCommon.ps1"
 
 function Confirm-Action($question) {
     if ($NonInteractive) { return $true }
@@ -55,9 +60,15 @@ function Confirm-Action($question) {
     return $answer -match '^[iIyY]'
 }
 
-# --- 1. Telepitesi konyvtar ---------------------------------------------
+# --- 0. Forras-repository gyokere (veszelyes-cel-ellenorzeshez kell) -------
+$scriptRoot = Split-Path -Parent $PSScriptRoot
+$looksLikeRepo = Test-Path (Join-Path $scriptRoot "pyproject.toml")
+$repoRootForGuard = if ($looksLikeRepo) { $scriptRoot } else { $null }
+
+# --- 1. Telepitesi konyvtar: bekerdezes + VESZELYES-CEL ELLENORZES ---------
+$defaultDir = Join-Path $env:LOCALAPPDATA "AndroidControlMCP"
+
 if (-not $InstallDir) {
-    $defaultDir = Join-Path $env:LOCALAPPDATA "AndroidControlMCP"
     if ($NonInteractive) {
         $InstallDir = $defaultDir
     } else {
@@ -65,13 +76,43 @@ if (-not $InstallDir) {
         $InstallDir = if ([string]::IsNullOrWhiteSpace($answer)) { $defaultDir } else { $answer }
     }
 }
+
+$maxAttempts = 5
+$attempt = 0
+$canonicalInstallDir = $null
+while ($true) {
+    $attempt++
+    $canonicalInstallDir = Get-CanonicalPath $InstallDir
+    $dangerReason = Test-DangerousInstallPath -CanonicalPath $canonicalInstallDir -RepoRoot $repoRootForGuard
+
+    if (-not $dangerReason) { break }
+
+    Write-Err2 "Nem biztonsagos telepitesi cel: $dangerReason"
+    if ($NonInteractive -or $attempt -ge $maxAttempts) {
+        Write-Err2 "Telepites megszakitva - nem sikerult biztonsagos celutvonalat megallapitani."
+        exit 1
+    }
+    $answer = Read-Host "Adj meg egy MASIK telepitesi mappat (alap: $defaultDir)"
+    $InstallDir = if ([string]::IsNullOrWhiteSpace($answer)) { $defaultDir } else { $answer }
+}
+
+$InstallDir = $canonicalInstallDir
 Write-Step "Telepitesi mappa: $InstallDir"
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-$AppDir = Join-Path $InstallDir "app"
-$VenvDir = Join-Path $InstallDir "venv"
+$AppDir = Get-CanonicalPath (Join-Path $InstallDir "app")
+$VenvDir = Get-CanonicalPath (Join-Path $InstallDir "venv")
 $ConfigDir = Join-Path $InstallDir "config"
 $LogsDir = Join-Path $InstallDir "logs"
 New-Item -ItemType Directory -Force -Path $ConfigDir, $LogsDir | Out-Null
+
+# Az AppDir-re is fuss le meg egyszer a veszelyes-cel ellenorzes (a forras-repo
+# tartalmazasa kulon problemas lehet appDir szintjen is, pl. ha valaki kezzel
+# manipulalta volna az InstallDir-t appDir=repoRoot-ra).
+$appDirDanger = Test-DangerousInstallPath -CanonicalPath $AppDir -RepoRoot $repoRootForGuard
+if ($appDirDanger) {
+    Write-Err2 "Nem biztonsagos app-konyvtar: $appDirDanger"
+    exit 1
+}
 
 # --- 2. Fuggosegek ellenorzese -------------------------------------------
 Write-Step "Fuggosegek ellenorzese"
@@ -83,28 +124,25 @@ if (-not $hasWinget) {
 }
 
 # Python
-$pythonExe = $null
-foreach ($cand in @("python", "python3")) {
-    $cmd = Get-Command $cand -ErrorAction SilentlyContinue
-    if ($cmd) {
-        $verOut = & $cmd.Source --version 2>&1
-        if ($verOut -match '(\d+)\.(\d+)\.(\d+)') {
-            $maj = [int]$Matches[1]; $min = [int]$Matches[2]
-            if ($maj -eq 3 -and $min -ge 10) { $pythonExe = $cmd.Source; break }
-        }
-    }
-}
+$pythonExe = Find-PythonExecutable
 if ($pythonExe) {
     Write-Ok "Python mar telepitve: $pythonExe"
 } else {
-    Write-Warn2 "Nem talalhato megfelelo Python (3.10+) a PATH-on."
+    Write-Warn2 "Nem talalhato megfelelo Python (3.10+) a PATH-on/ismert helyeken."
     if (-not $SkipDependencyInstall -and $hasWinget) {
         if (Confirm-Action "Telepitsem a hivatalos Python 3.12-t winget-tel (Python.Python.3.12, per-user, admin jog nelkul)?") {
-            winget install --id Python.Python.3.12 --source winget --scope user `
-                --accept-package-agreements --accept-source-agreements
-            Write-Warn2 "Uj terminal/PowerShell-ablak (vagy a PATH ujratoltese) szukseges lehet a telepites utan."
-            $cmd = Get-Command python -ErrorAction SilentlyContinue
-            if ($cmd) { $pythonExe = $cmd.Source }
+            Invoke-NativeChecked -Description "winget install Python.Python.3.12" -ScriptBlock {
+                winget install --id Python.Python.3.12 --exact --source winget --scope user `
+                    --accept-package-agreements --accept-source-agreements
+            }
+            # Robusztus ujra-felderites: NEM csak a PATH-ra tamaszkodunk (friss telepites
+            # utan ugyanabban a sessionben ez gyakran meg nem frissul).
+            $pythonExe = Find-PythonExecutable
+            if (-not $pythonExe) {
+                Write-Warn2 "A Python latszolag telepult, de ebben a sessionben meg nem talalhato " `
+                    "(PATH/registry/ismert hely alapjan sem). Probald ujraindaitani ezt a szkriptet " `
+                    "egy UJ PowerShell-ablakban."
+            }
         }
     }
     if (-not $pythonExe) {
@@ -122,8 +160,10 @@ if ($adbCmd) {
     Write-Warn2 "Az 'adb' nem talalhato a PATH-on."
     if (-not $SkipDependencyInstall -and $hasWinget) {
         if (Confirm-Action "Telepitsem a hivatalos Android SDK Platform-Tools csomagot winget-tel (Google.PlatformTools)?") {
-            winget install --id Google.PlatformTools --source winget `
-                --accept-package-agreements --accept-source-agreements
+            Invoke-NativeChecked -Description "winget install Google.PlatformTools" -ScriptBlock {
+                winget install --id Google.PlatformTools --exact --source winget `
+                    --accept-package-agreements --accept-source-agreements
+            }
         }
     } else {
         Write-Warn2 "Kezi telepites: https://developer.android.com/tools/releases/platform-tools"
@@ -139,31 +179,30 @@ if ($scrcpyCmd) {
         "a tobbi ADB-alapu automatizalas nelkule is mukodik)."
     if (-not $SkipDependencyInstall -and $hasWinget) {
         if (Confirm-Action "Telepitsem a hivatalos scrcpy-t winget-tel (Genymobile.scrcpy)?") {
-            winget install --id Genymobile.scrcpy --source winget `
-                --accept-package-agreements --accept-source-agreements
+            Invoke-NativeChecked -Description "winget install Genymobile.scrcpy" -ScriptBlock {
+                winget install --id Genymobile.scrcpy --exact --source winget `
+                    --accept-package-agreements --accept-source-agreements
+            }
         }
     }
 }
 
-# --- 3. Forraskod beszerzese ----------------------------------------------
+# --- 3. Forraskod beszerzese (KIZAROLAG git-tracked fajlok fejlesztoi repobol) ---
 Write-Step "Forraskod"
-$scriptRoot = Split-Path -Parent $PSScriptRoot
-$looksLikeRepo = Test-Path (Join-Path $scriptRoot "pyproject.toml")
 
 if ($looksLikeRepo -and ($scriptRoot -ne $AppDir)) {
-    Write-Ok "A szkript egy meglevo repo-bol fut ($scriptRoot) - ezt masoljuk be a telepitesi mappaba " `
-        "(fejlesztoi mellektermekek: .venv/.git/cache-ok NELKUL)."
-    if (Test-Path $AppDir) { Remove-Item -Recurse -Force $AppDir }
-    New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
-    # robocopy /MIR tukrozi a forrast, /XD kizarja a fejlesztoi mellektermek-mappakat -
-    # igy a masolat nem hurcolja magaval a fejlesztoi venv-et/git-torteneteket/cache-eket.
-    robocopy $scriptRoot $AppDir /MIR /NFL /NDL /NJH /NJS `
-        /XD ".venv" ".git" ".pytest_cache" ".ruff_cache" "__pycache__" | Out-Null
+    Write-Ok "A szkript egy meglevo repo-bol fut ($scriptRoot) - atmasolas a telepitesi mappaba."
+    Copy-TrackedRepoFiles -Source $scriptRoot -Destination $AppDir
 } elseif (Test-Path (Join-Path $AppDir ".git")) {
     Write-Ok "Mar letezo telepites talalhato itt: $AppDir - frissites (git pull)."
     Push-Location $AppDir
-    git pull --ff-only
-    Pop-Location
+    try {
+        Invoke-NativeChecked -Description "git pull --ff-only" -ScriptBlock {
+            git pull --ff-only
+        }
+    } finally {
+        Pop-Location
+    }
 } else {
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
     if (-not $gitCmd) {
@@ -172,25 +211,36 @@ if ($looksLikeRepo -and ($scriptRoot -ne $AppDir)) {
         exit 1
     }
     Write-Step "Klonozas: $RepoUrl -> $AppDir"
-    git clone $RepoUrl $AppDir
+    Invoke-NativeChecked -Description "git clone $RepoUrl" -ScriptBlock {
+        git clone $RepoUrl $AppDir
+    }
 }
 
 # --- 4. Sajat, izolalt venv -----------------------------------------------
 Write-Step "Python virtualis kornyezet: $VenvDir"
 if (-not (Test-Path $VenvDir)) {
-    & $pythonExe -m venv $VenvDir
+    Invoke-NativeChecked -Description "python -m venv" -ScriptBlock {
+        & $pythonExe -m venv $VenvDir
+    }
     Write-Ok "venv letrehozva."
 } else {
     Write-Ok "venv mar letezik, ujrahasznositva."
 }
 $venvPython = Join-Path $VenvDir "Scripts\python.exe"
+if (-not (Test-Path $venvPython)) {
+    throw "A venv Python futtathato nem talalhato a vart helyen: $venvPython"
+}
 
 Write-Step "Android Control MCP telepitese a venv-be"
-& $venvPython -m pip install --upgrade pip --quiet
-& $venvPython -m pip install $AppDir --quiet
+Invoke-NativeChecked -Description "pip install --upgrade pip" -ScriptBlock {
+    & $venvPython -m pip install --upgrade pip --quiet
+}
+Invoke-NativeChecked -Description "pip install $AppDir" -ScriptBlock {
+    & $venvPython -m pip install $AppDir --quiet
+}
 Write-Ok "Telepitve."
 
-# --- 5. Telepitesi allapot elmentese (a configure/doctor szamara) --------
+# --- 5. Telepitesi allapot + MARKER elmentese --------------------------------
 $installInfo = @{
     install_dir  = $InstallDir
     app_dir      = $AppDir
@@ -198,6 +248,9 @@ $installInfo = @{
     installed_at = (Get-Date).ToString("o")
 }
 $installInfo | ConvertTo-Json | Set-Content -Path (Join-Path $ConfigDir "install_info.json") -Encoding utf8
+
+$markerPath = Write-InstallMarker -InstallDir $InstallDir -AppDir $AppDir -VenvDir $VenvDir
+Write-Ok "Telepitesi marker irva: $markerPath (ezt validalja az uninstaller, mielott barmit torolne)."
 
 # --- 6. Doctor ellenorzes --------------------------------------------------
 Write-Step "Diagnosztika (doctor)"
@@ -210,4 +263,6 @@ Write-Host " Szerver inditasa kezzel:" -ForegroundColor Cyan
 Write-Host "   `"$venvPython`" -m android_control_mcp" -ForegroundColor Cyan
 Write-Host " MCP kliens beallitasahoz:" -ForegroundColor Cyan
 Write-Host "   `"$venvPython`" -m android_control_mcp configure" -ForegroundColor Cyan
+Write-Host " Eltavolitas:" -ForegroundColor Cyan
+Write-Host "   .\scripts\uninstall_windows.ps1 -InstallDir `"$InstallDir`"" -ForegroundColor Cyan
 Write-Host "=======================================================" -ForegroundColor Cyan

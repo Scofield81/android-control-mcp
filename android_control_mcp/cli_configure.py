@@ -67,6 +67,53 @@ def _load_json(path: Path) -> dict:
         return {}
 
 
+def _find_install_dir() -> Path | None:
+    """Ha ez a folyamat egy 'install_windows.ps1' altal letrehozott telepitesbol
+    fut (a venv sajat Pythonjaval), megtalalja az InstallDir-t a telepitesi
+    marker fajl alapjan - igy a configure el tudja tarolni a sajat
+    regisztracioit, amit kesobb az uninstaller biztonsagosan fel tud ajanlani
+    eltavolitasra. Fejlesztoi/rendszer-Python futtataskor (nincs marker) None-t
+    ad vissza - ilyenkor egyszeruen nincs hova naplozni, ez NEM hiba."""
+    try:
+        exe = Path(sys.executable).resolve()
+    except OSError:
+        return None
+    # Tipikus install-layout: <InstallDir>/venv/Scripts/python.exe (Windows).
+    candidate = exe.parent.parent.parent
+    marker = candidate / ".android-control-mcp-install.json"
+    if marker.is_file():
+        return candidate
+    return None
+
+
+def _log_registration(kind: str, scope: str, detail: dict) -> None:
+    """A sikeres MCP-kliens-regisztraciot elmenti az install sajat, helyi
+    'config/mcp_registrations.json' fajljaba (ha telepitett kornyezetbol
+    fut) - ez teszi lehetove, hogy az uninstaller biztonsagosan felajanlhassa
+    CSAK a sajat bejegyzes eltavolitasat, anelkul hogy barmit talalgatnia
+    kellene mas MCP-szerverekrol/konfiguraciokrol."""
+    install_dir = _find_install_dir()
+    if install_dir is None:
+        return
+    reg_path = install_dir / "config" / "mcp_registrations.json"
+    try:
+        reg_path.parent.mkdir(parents=True, exist_ok=True)
+        data = _load_json(reg_path)
+        entries = data.get("registrations", [])
+        entries.append({
+            "kind": kind,
+            "scope": scope,
+            "detail": detail,
+            "registered_at": datetime.now(timezone.utc).isoformat(),
+        })
+        data["registrations"] = entries
+        reg_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        print(f"  [FIGYELEM] A regisztracio naplozasa sikertelen ({exc}) - ez nem "
+              "akadalyozza a tenyleges konfiguraciot, csak az uninstaller kesobbi "
+              "automatikus ajanlasat erinti.")
+
+
 def configure_vscode(scope: str, workspace_dir: Path) -> None:
     entry = _server_entry()
     if scope == "project":
@@ -83,6 +130,8 @@ def configure_vscode(scope: str, workspace_dir: Path) -> None:
         print("  Ellenorzes: nyisd meg VS Code-ban ezt a mappat, majd a Command "
               "Palette-ben futtasd: 'MCP: List Servers' - az 'android-control'-nak "
               "meg kell jelennie.")
+        _log_registration("vscode", "project",
+                           {"config_path": str(path), "auto_removable": True})
     elif scope == "user":
         print("  A VS Code user-szintu MCP-konfiguraciojanak PONTOS fajlutvonala nincs "
               "stabilan dokumentalva a hivatalos VS Code forrasban, ezert ezt a fajlt "
@@ -96,6 +145,9 @@ def configure_vscode(scope: str, workspace_dir: Path) -> None:
         print(json.dumps({SERVER_NAME: entry}, ensure_ascii=False, indent=4))
         print()
         print("  4. Mentsd el, majd 'MCP: List Servers'-szel ellenorizd.")
+        _log_registration("vscode", "user",
+                           {"config_path": None, "auto_removable": False,
+                            "manual_note": "MCP: Open User Configuration -> torold az 'android-control' bejegyzest"})
     else:
         raise ValueError(f"Ismeretlen scope: {scope!r}")
 
@@ -133,6 +185,9 @@ def configure_claude_code(scope: str) -> None:
     if result.returncode == 0:
         print("  Sikeres. Ellenorzes: 'claude mcp list'")
         print(result.stdout.strip())
+        _log_registration("claude-code", scope,
+                           {"config_path": None, "auto_removable": False,
+                            "manual_note": f"claude mcp remove {SERVER_NAME}"})
     else:
         print(f"  [HIBA] 'claude mcp add' kilepesi kod {result.returncode}:")
         print(result.stderr.strip() or result.stdout.strip())
