@@ -7,8 +7,7 @@ import shlex
 from typing import Optional
 
 from ..adb import AdbError, NoDeviceError, resolve_serial, run_shell
-from ..config import CONFIG, Mode
-from ..permissions import PermissionDenied, require_mode
+from ..permissions import PermissionDenied
 
 SerialArg = Optional[str]
 """Minden tool ugyanazt a 'serial' parametert fogadja: melyik eszkozon fusson.
@@ -39,31 +38,25 @@ def validate_keycode(code: str) -> str:
 
 
 async def do_tap(x: int, y: int, serial: SerialArg) -> str:
-    real_serial = await resolve_serial(serial)
-    from ..backends import scrcpy_requested
+    """AI-vezerelt koppintas - mindig ADB-n keresztul.
 
-    if scrcpy_requested():
-        from ..backends import get_backend
-        backend = await get_backend(real_serial)
-        await backend.tap(x, y)
-    else:
-        await run_shell(f"input tap {int(x)} {int(y)}", serial=real_serial)
+    (Korabbi verziokban itt volt egy kiserleti, a 'scrcpy-client' PyPI
+    csomagot ujrahasznosito gyors-bemenet backend. Ez eltavolitasra kerult:
+    lasd docs/MIRRORING.md "Miert nincs AI-vezerelt gyors input scrcpy-vel"
+    szakaszat - a hivatalos scrcpy binaris a SAJAT ablakaba fogadja a fizikai
+    ember bemenetet, nem programozott egyedi tap-parancsokat egy scriptbol.)
+    """
+    real_serial = await resolve_serial(serial)
+    await run_shell(f"input tap {int(x)} {int(y)}", serial=real_serial)
     return real_serial
 
 
 async def do_swipe(x1: int, y1: int, x2: int, y2: int, duration_ms: int, serial: SerialArg) -> str:
     real_serial = await resolve_serial(serial)
-    from ..backends import scrcpy_requested
-
-    if scrcpy_requested():
-        from ..backends import get_backend
-        backend = await get_backend(real_serial)
-        await backend.swipe(x1, y1, x2, y2, duration_ms)
-    else:
-        await run_shell(
-            f"input swipe {int(x1)} {int(y1)} {int(x2)} {int(y2)} {int(duration_ms)}",
-            serial=real_serial,
-        )
+    await run_shell(
+        f"input swipe {int(x1)} {int(y1)} {int(x2)} {int(y2)} {int(duration_ms)}",
+        serial=real_serial,
+    )
     return real_serial
 
 

@@ -1,7 +1,8 @@
 """Tool-modulok osszegyujtese. Minden modul egy `register(mcp)` fuggvenyt ad,
 amit a szerver inditasakor sorban meghivunk."""
 
-from . import apps, capture, device, elements, files, input as input_tools, system, toggles, workflows
+from . import apps, capture, device, elements, files, rescue, system, toggles, workflows
+from . import input as input_tools
 
 REGISTRARS = [
     device.register,
@@ -13,4 +14,5 @@ REGISTRARS = [
     system.register,
     toggles.register,
     workflows.register,
+    rescue.register,
 ]

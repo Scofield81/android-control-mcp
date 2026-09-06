@@ -18,7 +18,6 @@ from .common import (
     do_type_text,
     fetch_ui_dump_xml,
     find_matching_elements,
-    format_element,
     parse_ui_elements,
     resolve_serial,
     sh_quote,

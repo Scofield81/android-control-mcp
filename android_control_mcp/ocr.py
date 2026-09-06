@@ -27,7 +27,7 @@ def ocr_available() -> tuple[bool, str]:
     """(elerheto, uzenet) - uzenet csak akkor van kitoltve, ha NEM elerheto,
     es megmondja, mit kell tenni."""
     try:
-        import pytesseract  # noqa: F401
+        import pytesseract
         from PIL import Image  # noqa: F401
     except ImportError:
         return False, (

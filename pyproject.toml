@@ -19,13 +19,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff>=0.4", "pytest>=8"]
-# KISERLETI, opt-in gyorsitott bemenet (lasd android_control_mcp/backends.py) -
-# csak akkor aktivalodik, ha az ANDROID_CONTROL_SCRCPY=1 IS be van kapcsolva.
-scrcpy = ["scrcpy-client>=0.4"]
 # Opcionalis OCR-fallback (lasd android_control_mcp/ocr.py) elemzetlen/WebView/
 # Canvas kepernyokhoz, ahol az uiautomator nem lat hasznalhato elemeket. A
 # Tesseract OCR motor binarisat KULON, rendszerszinten kell telepiteni.
 ocr = ["pytesseract>=0.3.10", "Pillow>=10"]
+# A Rescue mod NEM igenyel kulon Python csomagot - a hivatalos, aktivan
+# karbantartott Genymobile/scrcpy binarist hasznalja alfolyamatkent (nincs
+# vendorelt/reimplementalt protokoll). Lasd docs/RESCUE.md a telepiteshez.
 
 [project.scripts]
 android-control-mcp = "android_control_mcp.__main__:main"

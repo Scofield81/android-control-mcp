@@ -1,12 +1,14 @@
 # Android Control MCP
 
-**63 tool** egy komplett **Android eszköz-vezérlő** MCP szerverben. Nem csak „futtasd ezt az
+**71 tool** egy komplett **Android eszköz-vezérlő** MCP szerverben. Nem csak „futtasd ezt az
 ADB parancsot” – hanem „**kezeld a telefont/tabletet**”: szemantikus UI-vezérlés (`tap_element`,
 `type_into` — nincs szükség koordináta-számolásra), képernyőkép/-felvétel, opcionális
 OCR-fallback, alkalmazáskezelés, fájlműveletek, rendszer-kapcsolók (wifi/bluetooth/repülő
-üzemmód/hangerő), naplók, értesítések és magasabb szintű workflow-tool-ok (`open_app_and_wait`,
-`fill_form`, `assert_text`) – mindezt strukturált UI-hierarchiával, hogy a modellnek ne kelljen
-képfelismeréssel találgatnia, hova kell koppintani.
+üzemmód/hangerő), naplók, értesítések, magasabb szintű workflow-tool-ok (`open_app_and_wait`,
+`fill_form`, `assert_text`), és egy **Rescue mód** törött kijelzőjű/nem elérhető eszközök
+diagnosztikájához és adatmentéséhez (lásd [docs/RESCUE.md](docs/RESCUE.md)) – mindezt
+strukturált UI-hierarchiával, hogy a modellnek ne kelljen képfelismeréssel találgatnia, hova
+kell koppintani.
 
 Elsődlegesen **Windows**-on fejlesztve és tesztelve (a legtöbb felhasználó ADB-vel Windows-on
 dolgozik), de mivel tisztán a szabványos `adb` binárisra épül, macOS-en és Linuxon is működik.
@@ -30,7 +32,7 @@ kezdeni – ahogy semmi más, ami nem exploit/feltörő eszköz.
 
 | Sima megközelítés | Android Control MCP |
 |---|---|
-| Nyers `adb shell` parancsok | **63** fókuszált tool természetes munkamegosztással |
+| Nyers `adb shell` parancsok | **71** fókuszált tool természetes munkamegosztással |
 | Találgatás képernyőkép alapján | `ui_dump`: pontos koordináták, szöveg, resource-id minden elemhez |
 | Koordináták hurcolása tool-ok között | `tap_element(text="Bejelentkezés")`, `type_into(...)` — kereső+cselekvő egy hívásban |
 | Vak hozzáférés | `SAFE` / `NORMAL` / `ADMIN` mód + kockázat-alapú megerősítés visszafordíthatatlan műveleteknél |
@@ -50,25 +52,18 @@ a kódban ténylegesen kikényszerített szintek most már **egyeznek** (korább
 néhány visszafordíthatatlan művelet — APK telepítés, alkalmazás eltávolítása/adattörlése,
 `shell_run`, `reboot` — tévesen `NORMAL` alatt is elérhető volt; ez javítva).
 
-### Sebesség
+### Sebesség és képernyő-tükrözés
 
-A tiszta `adb shell input`/`screencap` út tipikusan **100-300 ms**/koppintás. Létezik
-gyorsabb megoldás: a [scrcpy-mcp](https://github.com/JuanCF/scrcpy-mcp) projekt scrcpy
-bináris vezérlő-protokollját használva **~5-10 ms**/input sebességet ér el. Ez a projekt
-mostantól tartalmazza ennek **opcionális, kísérleti** implementációját
-(`android_control_mcp/backends.py`, a `scrcpy-client` Python csomagra építve):
+Az AI-vezérelt automatizálás (`tap`, `swipe`, `ui_dump`, stb.) tisztán ADB-n megy, tipikusan
+**100-300 ms**/koppintás — ez megbízható, jól tesztelt, függőségmentes. *(Egy korábbi
+verzióban volt egy kísérleti, a `scrcpy-client` PyPI csomagra épülő gyors-input backend —
+ezt eltávolítottuk, mert rossz eszköz volt a célra: lásd [docs/MIRRORING.md](docs/MIRRORING.md)
+"Miért a hivatalos scrcpy binárist hívjuk" szakaszát.)*
 
-```bash
-pip install -e ".[scrcpy]"
-ANDROID_CONTROL_SCRCPY=1 android-control-mcp
-```
-
-**Fontos, őszinte figyelmeztetés:** ez a réteg **nincs validálva valódi Android eszközön**
-(ebben a fejlesztési menetben nem volt csatlakoztatott telefon). A hibakezelés úgy készült,
-hogy bármilyen hiba (hiányzó csomag, sikertelen kapcsolódás, protokoll-eltérés) esetén
-**csendben és véglegesen ADB-re esik vissza** az adott munkamenetben — tehát alapból (env
-változó nélkül) és hiba esetén is mindig a bizonyítottan működő ADB-utat kapod. Éles
-teszteléséhez valódi eszköz kell — ez a következő lépés.
+**Emberi operátor számára** (nagy képernyős vezérlés, Rescue mód) a projekt a **hivatalos,
+aktívan karbantartott** [Genymobile/scrcpy](https://github.com/Genymobile/scrcpy) binárist
+indítja el alfolyamatként (`rescue_start_mirror`) — nincs saját, újraimplementált videó-
+protokoll. Lásd [Rescue mód](#rescue-mód--törött-kijelzőjűnem-elérhető-eszközök) lent.
 
 ### OCR/vision fallback
 
@@ -173,7 +168,32 @@ Alap hely: `~/.config/android-control-mcp/config.json` (vagy `ANDROID_CONTROL_CO
 
 ---
 
-## Tool-katalógus (összesen 63 tool)
+## Rescue mód — törött kijelzőjű/nem elérhető eszközök
+
+Ha a telefon kijelzője törött (nem lehet feloldani), de a saját eszközödről van szó és
+korábban **már** engedélyezted az USB hibakeresést azon a gépen amivel most csatlakoztatod —
+vagy a telefon támogat vezetékes külső kijelzőt —, a Rescue mód segít diagnosztizálni és
+adatot menteni. **Ez NEM lockscreen-bypass/brute-force eszköz** — lásd [Fontos határ](#fontos-határ)
+és részletesen [docs/RESCUE.md](docs/RESCUE.md).
+
+```
+rescue_probe(manufacturer_hint="Samsung", model_hint="Galaxy S22")
+```
+
+Ez megmondja: engedélyezett-e már az ADB; van-e telepítve hivatalos `scrcpy`; támogat-e a
+telefon (az ismert modell alapján) vezetékes videó-kimenetet; és egy konkrét, csak a
+ténylegesen ismert adatokra épülő javaslatot ad, mit érdemes tenni. Minden érték
+`supported`/`unsupported`/**`unknown`** — sosem találunk ki támogatást (lásd
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)).
+
+**`rescue_start_otg`** ADB nélkül, a saját fizikai USB billentyűzeted/egered a telefonnak
+továbbítva (AOAv2 HID, a hivatalos `scrcpy --otg` módján keresztül) teszi lehetővé PIN/minta
+beírását, ha a kijelző még látszik, csak az érintés nem működik — **te írod be a saját
+kódodat**, a program nem próbálgat semmit.
+
+---
+
+## Tool-katalógus (összesen 71 tool)
 
 | Kategória | Tool-ok | Db |
 |---|---|--:|
@@ -186,6 +206,7 @@ Alap hely: `~/.config/android-control-mcp/config.json` (vagy `ANDROID_CONTROL_CO
 | Rendszer-kapcsolók | `wifi_toggle` · `bluetooth_toggle` · `airplane_mode_toggle` · `set_volume` · `open_notification_panel` · `screen_orientation` | 6 |
 | Workflow (összetett) | `open_app_and_wait` · `fill_form` · `wait_until_screen_changes` · `assert_text` | 4 |
 | Rendszer | `logcat_tail` · `list_notifications` · `running_processes` · `wait` · `shell_run` · `reboot` · `backup_apps_data` · `connect_wifi` · `disconnect_device` | 9 |
+| Rescue (törött kijelző) | `rescue_probe` · `device_capabilities` · `explain_capability` · `rescue_scrcpy_status` · `rescue_start_mirror` · `rescue_start_otg` · `rescue_list_sessions` · `rescue_stop_session` | 8 |
 
 Teljes, mindig aktuális lista: `android-control-mcp --list-tools`
 
@@ -233,11 +254,21 @@ pytest tests/ -v
 ruff check .
 ```
 
-A `tests/` alatt 49 automatikus teszt van (mind zöld, ADB/eszköz nélkül futtatható) — az
-UI-dump parszolásra, a csomagnév/keyevent-validációra, a mód-kapu logikájára (a `set_mode`
-javított ceiling-viselkedésére a tényleges regisztrált tool-on keresztül) és a scrcpy/OCR
-graceful-fallback viselkedésre. GitHub Actions CI (`.github/workflows/tests.yml`) minden
-push-nál lefuttatja Python 3.10 és 3.13 alatt is.
+A `tests/` alatt 56 automatikus teszt van (mind zöld, ADB/eszköz/scrcpy nélkül futtatható) —
+UI-dump parszolás, csomagnév/keyevent-validáció, a mód-kapu logikája (a `set_mode` javított
+ceiling-viselkedésére a tényleges regisztrált tool-on keresztül), OCR graceful-fallback, a
+kompatibilitási adatbázis (`unknown`-alapértelmezés helyessége), és a Rescue
+kapacitás-felismerés (ADB nélküli állapotban minden ADB-függő mező tényleg `unknown`
+marad-e). **Nincs GitHub Actions CI** — a tesztelés helyben történik, `pytest tests/ -v`-vel.
+
+## Dokumentáció
+
+- [docs/RESCUE.md](docs/RESCUE.md) — törött kijelző, adatmentés, AOA/OTG, korlátok
+- [docs/MIRRORING.md](docs/MIRRORING.md) — tükrözés-architektúra, miért a hivatalos scrcpy
+- [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) — platform-minimumok, gyártói adatbázis
+- [docs/GAMING.md](docs/GAMING.md) — tervezett keymapping-motor (roadmap, nincs implementálva)
+- [docs/BENCHMARKING.md](docs/BENCHMARKING.md) — mérési terv (roadmap, nincs mért adat)
+- [docs/INSTALL.md](docs/INSTALL.md) — részletes telepítési útmutató
 
 ---
 

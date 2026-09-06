@@ -14,7 +14,6 @@ Ugyanaz a ket-retegu modell, mint a testver-projektben (ubuntu-control-mcp):
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -45,11 +44,11 @@ def require_mode(needed: Mode, *, what: str) -> None:
 
 class _Approval(BaseModel):
     approve: bool = Field(description="Igaz = a muvelet vegrehajthato. Hamis = elutasitva.")
-    note: Optional[str] = Field(default=None, description="Opcionalis megjegyzes a felhasznalotol.")
+    note: str | None = Field(default=None, description="Opcionalis megjegyzes a felhasznalotol.")
 
 
 async def ask_permission(ctx, *, action: str, details: str, risk: RiskLevel,
-                          serial: Optional[str] = None) -> None:
+                          serial: str | None = None) -> None:
     target = f"eszkoz: {serial}" if serial else "az alapertelmezett/egyetlen csatlakoztatott eszkoz"
 
     if CONFIG.auto_approve:

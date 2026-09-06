@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import shutil
 from dataclasses import dataclass
-from typing import Optional
 
 from .config import CONFIG
 
@@ -39,7 +38,7 @@ def adb_available() -> bool:
 async def run_adb(
     args: list[str],
     *,
-    serial: Optional[str] = None,
+    serial: str | None = None,
     timeout: float = 30.0,
     binary: bool = False,
 ) -> AdbResult:
@@ -81,7 +80,7 @@ async def run_adb(
     return AdbResult(returncode=proc.returncode or 0, stdout=stdout, stderr=stderr)
 
 
-async def run_adb_checked(args: list[str], *, serial: Optional[str] = None,
+async def run_adb_checked(args: list[str], *, serial: str | None = None,
                            timeout: float = 30.0, binary: bool = False) -> str:
     """Mint run_adb, de hibas kilepesi kod eseten AdbError-t dob a stderr-rel."""
     result = await run_adb(args, serial=serial, timeout=timeout, binary=binary)
@@ -90,7 +89,7 @@ async def run_adb_checked(args: list[str], *, serial: Optional[str] = None,
     return result.stdout
 
 
-async def run_shell(command: str, *, serial: Optional[str] = None, timeout: float = 30.0) -> str:
+async def run_shell(command: str, *, serial: str | None = None, timeout: float = 30.0) -> str:
     """`adb shell <command>` - a leggyakrabban hasznalt muvelet."""
     return await run_adb_checked(["shell", command], serial=serial, timeout=timeout)
 
@@ -115,7 +114,7 @@ async def list_devices() -> list[DeviceEntry]:
     return entries
 
 
-async def resolve_serial(serial: Optional[str]) -> str:
+async def resolve_serial(serial: str | None) -> str:
     """Eldonti, melyik eszkoz sorozatszamat hasznaljuk, ha a hivo nem adott meg egyet.
 
     Sorrend: explicit parameter -> CONFIG.default_serial -> az egyetlen

@@ -11,7 +11,7 @@ import os
 
 from mcp.server.fastmcp import Context
 
-from ..adb import resolve_serial, run_adb, run_adb_checked, run_shell
+from ..adb import resolve_serial, run_adb_checked, run_shell
 from ..audit import audit
 from ..config import Mode
 from ..permissions import (

@@ -1,0 +1,101 @@
+{
+  "_comment": "Bovitheto gyarto/modell kompatibilitasi adatbazis. Minden bejegyzeshez forras + ellenorzes datuma tartozik. Ha egy allitast ebben a fejlesztoi menetben nem tudtunk fuggetlenul, elsodleges forrasbol ujra-ellenorizni, azt 'source' mezoben jeloljuk ('community/scrcpy reports - nincs harmadik felkent ujra-ellenorizve'). Hianyzo modell = 'unknown', SOHA nem talalunk ki tamogatast.",
+  "devices": [
+    {
+      "manufacturer": "Google",
+      "model_pattern": "Pixel 8( Pro| a)?$",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG tamogatott, kulon az AOA HID-tol.",
+      "source": "Google hivatalos bejelentes (Android 14 QPR2+, build SQ3A.240605.002+) - androidcentral.com/androidpolice.com 2024-06",
+      "verified_date": "2026-09-06",
+      "note": "Pixel 7 es regebbi NEM tamogatja ezt (csak Pixel 8-tol)."
+    },
+    {
+      "manufacturer": "Google",
+      "model_pattern": "Pixel 9",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG tamogatott, kulon az AOA HID-tol.",
+      "source": "Google hivatalos bejelentes (Android 14 QPR2+) - androidcentral.com 2024-06",
+      "verified_date": "2026-09-06",
+      "note": "Minden Pixel 9 valtozat (alap/Pro/Pro XL/Pro Fold) tamogatja."
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy S(8|9|10|20|21|22|23)",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "USB Host/OTG tamogatott. DeX on PC kulon capability, modellenkent es One UI verziotol fuggoen valtozhat.",
+      "source": "Samsung hivatalos DeX kompatibilitasi dokumentacio - community/scrcpy reports, nincs ebben a menetben egyenkent ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": "One UI 7 / Android 15 utani modelleknel a 'DeX on PC' funkcio megszunhetett - a vezetekes DeX (kulso kijelzore) ettol fuggetlen capability, kulon ellenorizendo."
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy Note(8|9|10|20)",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "USB Host/OTG tamogatott.",
+      "source": "Samsung hivatalos DeX kompatibilitasi dokumentacio - community/scrcpy reports, nincs ebben a menetben egyenkent ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": ""
+    },
+    {
+      "manufacturer": "Xiaomi",
+      "model_pattern": "^15$",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "unknown",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG tamogatott.",
+      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": "Xiaomi sajat asztali mod eltero nevvel/keppel a DeX-tol - kulon utananezest igenyel."
+    },
+    {
+      "manufacturer": "Xiaomi",
+      "model_pattern": "15T",
+      "wired_video_output": "unsupported",
+      "displayport_alt_mode": "unsupported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG (AOA HID) tamogatott - CSAK ez, video-kimenet nem.",
+      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": "Fontos pelda arra, hogy az OTG-tamogatasbol NEM kovetkezik video-kimenet."
+    },
+    {
+      "manufacturer": "Xiaomi",
+      "model_pattern": "POCO X7",
+      "wired_video_output": "unsupported",
+      "displayport_alt_mode": "unsupported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG (AOA HID) tamogatott - CSAK ez, video-kimenet nem.",
+      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": ""
+    },
+    {
+      "manufacturer": "Xiaomi",
+      "model_pattern": "Redmi Note 12",
+      "wired_video_output": "unsupported",
+      "displayport_alt_mode": "unsupported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "unknown - egyedi ellenorzest igenyel.",
+      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
+      "verified_date": "2026-09-06",
+      "note": ""
+    }
+  ]
+}

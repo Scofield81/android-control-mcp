@@ -12,7 +12,6 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 
 class Mode(str, Enum):
@@ -48,8 +47,8 @@ class AppConfig:
     sosem tud ennel magasabbra menni, fuggetlenul attol, hogy 'mode' pillanatnyilag
     mit mutat - igy egy ADMIN->SAFE->ADMIN oda-vissza valtas is korrekt marad."""
     auto_approve: bool = False
-    audit_log: Optional[Path] = None
-    default_serial: Optional[str] = None
+    audit_log: Path | None = None
+    default_serial: str | None = None
     """Ha tobb eszkoz van csatlakoztatva es a hivo nem ad meg 'serial'-t, ezt hasznaljuk."""
     adb_path: str = "adb"
     config_path: Path = field(default_factory=_default_config_path)
