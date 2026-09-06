@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..adb import list_devices, resolve_serial, run_shell
-from ..config import CONFIG, Mode
+from ..config import CONFIG, Mode, level_value
 from ..formatting import parse_key_value_lines
 from .common import SerialArg, dumpsys
 
@@ -128,24 +128,23 @@ def register(mcp) -> None:
     async def set_mode(mode: str) -> str:
         """A szerver engedely-modjanak valtasa futas kozben: 'safe', 'normal' vagy 'admin'.
 
-        Lefele barmikor valthato. Felfele csak akkor, ha a szerver mar 'admin'
-        modban fut, vagy a valtast a UBUNTU_CONTROL... mintajara kornyezeti
-        valtozoval inditottak - a modell soha nem tudja onmagat feljebb emelni.
+        Az inditasi mod (env/config) egy FELSO HATART (max_mode) rogzit - 'set_mode'
+        soha nem tud ennel magasabbra menni, akkor sem, ha kozben mar levittek a modot.
+        Igy egy ADMIN inditasu szerveren SAFE -> NORMAL -> ADMIN oda-vissza szabadon
+        valthato, de egy NORMAL inditasu szerver soha nem er fel ADMIN-ig set_mode-dal
+        - csak az ANDROID_CONTROL_MODE=admin kornyezeti valtozoval, ujrainditva.
         """
         try:
             target = Mode(mode.lower())
         except ValueError:
             return f"Ervenytelen mod: {mode!r}. Ervenyes ertekek: safe, normal, admin."
 
-        from ..permissions import PermissionDenied
-        current_level = {"safe": 0, "normal": 1, "admin": 2}[CONFIG.mode.value]
-        target_level = {"safe": 0, "normal": 1, "admin": 2}[target.value]
-        if target_level > current_level and CONFIG.mode != Mode.ADMIN:
+        if level_value(target) > level_value(CONFIG.max_mode):
             return (
-                f"A mod NEM valthato '{target.value.upper()}'-ra: a szerver jelenleg "
-                f"'{CONFIG.mode.value.upper()}' modban fut, es csak ADMIN modbol lehet "
-                f"felfele valtani. Inditsd ujra a szervert ANDROID_CONTROL_MODE={target.value} "
+                f"A mod NEM valthato '{target.value.upper()}'-ra: a szerver "
+                f"'{CONFIG.max_mode.value.upper()}' felso hatarral indult, ez a hatar futas "
+                f"kozben nem emelheto. Inditsd ujra ANDROID_CONTROL_MODE={target.value} "
                 f"kornyezeti valtozoval, ha valoban ezt szeretned."
             )
         CONFIG.mode = target
-        return f"Mod valtva: {target.value.upper()}"
+        return f"Mod valtva: {target.value.upper()} (felso hatar: {CONFIG.max_mode.value.upper()})"

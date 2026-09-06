@@ -4,19 +4,25 @@ Az ui_dump az Android sajat uiautomator eszkozet hasznalja, ami az
 Accessibility-hez hasonloan strukturalt informaciot ad az aktualisan lathato
 elemekrol (szoveg, resource-id, koordinatak, kattinthato-e) - igy a modellnek
 nem kell kepfelismeressel (OCR/CV) kitalalnia, hova kell koppintani.
+
+A tenyleges XML-parszolas es elem-strukturalas a common.py-ban van
+(parse_ui_elements/find_matching_elements), hogy az elements.py szemantikus
+tool-jai (tap_element, type_into, ...) ugyanazt a logikat hasznaljak.
 """
 
 from __future__ import annotations
-
-import re
-import xml.etree.ElementTree as ET
 
 from mcp.server.fastmcp import Image
 
 from ..adb import resolve_serial, run_adb, run_adb_checked, run_shell
 from ..audit import audit
 from ..formatting import truncate
-from .common import SerialArg
+from .common import (
+    SerialArg,
+    fetch_ui_dump_xml,
+    format_element,
+    parse_ui_elements,
+)
 
 
 def register(mcp) -> None:
@@ -26,7 +32,8 @@ def register(mcp) -> None:
         """Kepernyokep keszitese az eszkozrol, PNG kepkent visszaadva.
 
         Igy a modell szo szerint 'latja' az aktualis kepernyot - hasznos amikor
-        az ui_dump nem eleg (pl. jatek, video, egyedi rajzolt UI).
+        az ui_dump nem eleg (pl. jatek, video, egyedi rajzolt UI, WebView/Canvas
+        tartalom, amit az uiautomator nem lat elemenkent).
         """
         real_serial = await resolve_serial(serial)
         result = await run_adb(["exec-out", "screencap", "-p"], serial=real_serial,
@@ -61,10 +68,6 @@ def register(mcp) -> None:
 
         data = result.stdout.encode("latin-1")
         audit("screen_record", serial=real_serial, seconds=seconds, bytes=len(data))
-        # Az MCP kepen kivul nativan nem tamogat video-tipust minden kliens; a fajlt
-        # ezert a hivo altal megadhato helyi utvonalra is le lehet menteni a
-        # 'pull_file' tool-lal a felvetel utan (a remote_path mar torolve van, ezert
-        # ez a tool a nyers meretet es egy figyelmeztetest ad vissza, ha tul nagy).
         if len(data) > 15 * 1024 * 1024:
             return (
                 f"A felvetel elkeszult ({len(data) / 1024 / 1024:.1f} MB), de tul nagy ahhoz, "
@@ -79,89 +82,124 @@ def register(mcp) -> None:
     async def ui_dump(serial: SerialArg = None, only_interactive: bool = True) -> str:
         """Az aktualis kepernyo UI-elemeinek strukturalt listaja (uiautomator).
 
-        Minden elemhez megadja: szoveg, resource-id, osztaly, es a kozeppont
-        koordinatait (amit a 'tap' tool-nak at lehet adni). Ez a legmegbizhatobb
-        modja annak, hogy a modell tudja, hova koppintson - nem kell kepen
-        'talalgatnia'. only_interactive=True eseten csak a kattinthato/szerkesztheto
+        Minden elemhez megadja: id (a 'tap_element'/'type_into' 'element_id'
+        parameteret ez adja), szoveg, resource-id, osztaly, allapot-jelzok
+        ([C]lickable/[T]ext-mezo/[E]nabled/[S]elected), es a kozeppont
+        koordinatait. Ez a legmegbizhatobb modja annak, hogy a modell tudja,
+        hova koppintson - de meg egyszerubb kozvetlenul a 'tap_element'/
+        'find_element' tool-t hasznalni, ami mar el is vegzi a koordinata-
+        szamolast. only_interactive=True eseten csak a kattinthato/szerkesztheto
         elemeket mutatja (rovidebb, attekinthetobb valasz).
         """
-        real_serial = await resolve_serial(serial)
-        remote_path = "/sdcard/android_control_mcp_dump.xml"
-        await run_adb_checked(["shell", f"uiautomator dump {remote_path}"],
-                               serial=real_serial, timeout=20.0)
-        xml_text = await run_adb_checked(["exec-out", "cat", remote_path],
-                                          serial=real_serial, timeout=15.0)
-        await run_shell(f"rm -f {remote_path}", serial=real_serial)
+        xml_text, real_serial = await fetch_ui_dump_xml(serial)
+        elements = parse_ui_elements(xml_text)
+        if only_interactive:
+            elements = [e for e in elements if e["clickable"] or e["editable"]]
 
-        elements = _parse_ui_dump(xml_text, only_interactive=only_interactive)
         if not elements:
-            return "Nem talalhato elem (ures kepernyo, vagy csak grafikus/jatek tartalom - probald a 'screenshot' tool-t)."
-        return truncate("\n".join(elements))
+            return ("Nem talalhato hasznalhato elem (ures kepernyo, vagy csak grafikus/jatek/"
+                    "WebView/Canvas tartalom, amit az uiautomator nem lat elemenkent). Probald "
+                    "az 'ocr_screen' tool-t (ha az opcionalis OCR extra telepitve van), vagy a "
+                    "'screenshot'-ot vizualis ellenorzeshez.")
+        return truncate("\n".join(format_element(e) for e in elements))
+
+    @mcp.tool()
+    async def ocr_screen(lang: str = "eng", serial: SerialArg = None) -> str:
+        """OCR-alapu szovegfelismeres a kepernyon - fallback, amikor az 'ui_dump'
+        ures listat ad (jatek, WebView, Canvas, egyedi rajzolt UI).
+
+        Opcionalis fuggoseget igenyel: 'pip install -e \".[ocr]\"' a projektben,
+        plusz a Tesseract OCR motor rendszerszintu telepiteset. Ha ezek
+        hianyoznak, vilagos utmutatast ad, mit kell telepiteni - nem hasal el.
+        lang: Tesseract nyelvkod, tobb nyelvhez pl. 'eng+hun'.
+        """
+        from ..ocr import format_ocr_box, ocr_available, run_ocr
+
+        available, message = ocr_available()
+        if not available:
+            return message
+
+        real_serial = await resolve_serial(serial)
+        result = await run_adb(["exec-out", "screencap", "-p"], serial=real_serial,
+                                timeout=20.0, binary=True)
+        if result.returncode != 0:
+            return f"Kepernyokep sikertelen az OCR-hez: {result.stderr.strip()}"
+
+        png_bytes = result.stdout.encode("latin-1")
+        boxes = run_ocr(png_bytes, lang=lang)
+        audit("ocr_screen", serial=real_serial, box_count=len(boxes), lang=lang)
+
+        if not boxes:
+            return "Az OCR nem talalt felismerheto szoveget a kepernyon."
+        return truncate("\n".join(format_ocr_box(b) for b in boxes))
 
     @mcp.tool()
     async def wait_for_text(text: str, timeout_seconds: int = 10, serial: SerialArg = None) -> str:
         """Var, amig egy adott szoveg megjelenik a kepernyon (ui_dump-ot ismetel).
 
-        Hasznos, hogy az agent ne 'tuti 1 masodpercet' varjon minden lepes utan,
+        Hasznos, hogy az agent ne 'tuti X masodpercet' varjon minden lepes utan,
         hanem tenylegesen addig probalkozzon, amig a keresett UI elem meg nem
         jelenik (pl. betoltodik egy oldal), de legfeljebb timeout_seconds-ig.
+        Konkret elemre varashoz (resource-id/osztaly alapjan is) hasznald a
+        'wait_for_element' tool-t.
         """
         import asyncio
         import time
 
-        real_serial = await resolve_serial(serial)
         deadline = time.monotonic() + max(1, min(60, timeout_seconds))
-        remote_path = "/sdcard/android_control_mcp_dump.xml"
 
         while time.monotonic() < deadline:
-            await run_adb_checked(["shell", f"uiautomator dump {remote_path}"],
-                                   serial=real_serial, timeout=15.0)
-            xml_text = await run_adb_checked(["exec-out", "cat", remote_path],
-                                              serial=real_serial, timeout=10.0)
+            xml_text, real_serial = await fetch_ui_dump_xml(serial)
             if text.lower() in xml_text.lower():
-                await run_shell(f"rm -f {remote_path}", serial=real_serial)
                 return f"Megtalalva: {text!r} megjelent a kepernyon."
+            serial = real_serial
             await asyncio.sleep(1.0)
 
-        await run_shell(f"rm -f {remote_path}", serial=real_serial)
         return f"Idotullepes: {text!r} nem jelent meg {timeout_seconds} masodperc alatt."
 
+    @mcp.tool()
+    async def observe_screen(serial: SerialArg = None, include_screenshot: bool = False):
+        """Egyetlen hivassal osszegyujti a kepernyo aktualis allapotat.
 
-def _parse_ui_dump(xml_text: str, *, only_interactive: bool) -> list[str]:
-    try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError:
-        return []
+        Visszaadja egyben: eloterben lathato alkalmazas/aktivitas, kepernyomeret
+        es -orientacio, es a fontosabb (kattinthato/szerkesztheto) UI-elemek
+        listaja. Ezzel egy agentnek nem kell minden lepes elott 3-4 kulon
+        tool-t hivnia (foreground_app + ui_dump + screen_state) - egy hivasbol
+        latja az aktualis 'jelenetet'. include_screenshot=True eseten a
+        kepernyokep is mellekelve van (kulon uzenetkent, mert a valasz maga
+        szoveges marad).
+        """
+        real_serial = await resolve_serial(serial)
 
-    bounds_re = re.compile(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]")
-    lines: list[str] = []
+        foreground = await run_shell(
+            "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' 2>/dev/null "
+            "|| dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity'",
+            serial=real_serial, timeout=15.0,
+        )
+        size_out = await run_shell("wm size", serial=real_serial)
 
-    for node in root.iter("node"):
-        text = node.get("text", "")
-        desc = node.get("content-desc", "")
-        res_id = node.get("resource-id", "")
-        cls = node.get("class", "").rsplit(".", 1)[-1]
-        clickable = node.get("clickable") == "true"
-        editable = "EditText" in cls
-        bounds = node.get("bounds", "")
+        xml_text, _ = await fetch_ui_dump_xml(real_serial)
+        elements = parse_ui_elements(xml_text)
+        interactive = [e for e in elements if e["clickable"] or e["editable"]]
 
-        if only_interactive and not (clickable or editable):
-            continue
-        if not (text or desc or res_id):
-            continue
+        lines = [
+            f"Eloterben: {foreground.strip() or '(nem allapithato meg)'}",
+            f"Kepernyo: {size_out.strip()}",
+            f"UI elemek ({len(interactive)} interaktiv, {len(elements)} osszesen):",
+        ]
+        lines.extend(format_element(e) for e in interactive[:60])
+        if len(interactive) > 60:
+            lines.append(f"... es meg {len(interactive) - 60} tovabbi elem (hasznald a 'ui_dump'-ot a teljes listahoz)")
 
-        m = bounds_re.match(bounds)
-        center = ""
-        if m:
-            x1, y1, x2, y2 = map(int, m.groups())
-            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-            center = f"({cx},{cy})"
+        text_result = truncate("\n".join(lines))
+        audit("observe_screen", serial=real_serial, element_count=len(elements))
 
-        label = text or desc or res_id.rsplit("/", 1)[-1]
-        flags = "".join([
-            "T" if editable else "",
-            "C" if clickable else "",
-        ])
-        lines.append(f"[{flags}] {cls} \"{label}\" id={res_id or '-'} center={center}")
+        if not include_screenshot:
+            return text_result
 
-    return lines
+        result = await run_adb(["exec-out", "screencap", "-p"], serial=real_serial,
+                                timeout=20.0, binary=True)
+        if result.returncode == 0:
+            img = Image(data=result.stdout.encode("latin-1"), format="png")
+            return [text_result, img]
+        return text_result

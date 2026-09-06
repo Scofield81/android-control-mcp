@@ -19,7 +19,7 @@ from ..permissions import (
     ask_permission,
     require_mode,
 )
-from .common import SerialArg
+from .common import SerialArg, sh_quote
 
 
 def register(mcp) -> None:
@@ -33,7 +33,9 @@ def register(mcp) -> None:
         """
         real_serial = await resolve_serial(serial)
         lines = max(1, min(lines, 2000))
-        tag_arg = f" {filter_tag}" if filter_tag else ""
+        # A filter_tag tobb, szokozzel elvalasztott 'Tag:Prio' tokent is tartalmazhat
+        # (pl. 'MyApp:V *:S') - egyenkent idezzuk, ne az egesz stringet egyben.
+        tag_arg = "".join(f" {sh_quote(tok)}" for tok in filter_tag.split())
         out = await run_shell(f"logcat -d -t {lines}{tag_arg}", serial=real_serial, timeout=20.0)
         return truncate(out)
 
@@ -87,7 +89,7 @@ def register(mcp) -> None:
         tap ...\")' helyett) - igy a naplok es a megerosites-kerdesek is
         ertelmezhetobbek maradnak. Kozepes kockazatunak szamit, megerositest ker.
         """
-        require_mode(Mode.NORMAL, what="tetszoleges shell parancs")
+        require_mode(Mode.ADMIN, what="tetszoleges shell parancs")
         risk, reason = RISK_SHELL_RUN
         await ask_permission(ctx, action=f"shell parancs: {command[:200]}", details=reason,
                               risk=risk, serial=serial)
@@ -105,7 +107,7 @@ def register(mcp) -> None:
         hasznalathoz altalaban kulon (fizikai gombos) muvelet vagy flash-eles
         szukseges, ezert erosebb megerositest ker.
         """
-        require_mode(Mode.NORMAL, what="ujrainditas")
+        require_mode(Mode.ADMIN, what="ujrainditas")
         mode = mode.lower().strip()
         if mode not in ("normal", "recovery", "bootloader"):
             return "Ervenytelen mod. Hasznalj: normal, recovery, bootloader."
@@ -131,7 +133,7 @@ def register(mcp) -> None:
         (es esetleg jelszot) kerhet - ha a kepernyo torott, ez akadaly lehet, de
         ez az Android sajat mechanizmusa, nem ezen eszkoz korlatja.
         """
-        require_mode(Mode.NORMAL, what="teljes eszkoz-mentes")
+        require_mode(Mode.ADMIN, what="teljes eszkoz-mentes")
         await ask_permission(
             ctx, action=f"Teljes ADB mentes -> {local_path}",
             details="Az osszes (vagy a kivalasztott) alkalmazas adatai egy fajlba kerulnek.",

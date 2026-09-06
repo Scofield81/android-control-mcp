@@ -41,6 +41,12 @@ def _default_audit_log_path() -> Path:
 @dataclass
 class AppConfig:
     mode: Mode = Mode.NORMAL
+    """Az AKTUALIS mod - ez valtozik 'set_mode' hivasra. Sose hasonlitsd ezt
+    ahhoz, hogy meddig szabad felfele menni - arra a max_mode van."""
+    max_mode: Mode = Mode.NORMAL
+    """A szerver inditasakor rogzitett FELSO HATAR (env/config alapjan). 'set_mode'
+    sosem tud ennel magasabbra menni, fuggetlenul attol, hogy 'mode' pillanatnyilag
+    mit mutat - igy egy ADMIN->SAFE->ADMIN oda-vissza valtas is korrekt marad."""
     auto_approve: bool = False
     audit_log: Optional[Path] = None
     default_serial: Optional[str] = None
@@ -97,6 +103,8 @@ def load_config() -> AppConfig:
 
     if cfg.audit_log is None:
         cfg.audit_log = _default_audit_log_path()
+
+    cfg.max_mode = cfg.mode
 
     return cfg
 

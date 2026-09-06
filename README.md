@@ -1,11 +1,12 @@
 # Android Control MCP
 
-**52 tool** egy komplett **Android eszköz-vezérlő** MCP szerverben. Nem csak „futtasd ezt az
-ADB parancsot” – hanem „**kezeld a telefont/tabletet**”: UI-automatizálás (koppintás, gépelés,
-gesztusok), képernyőkép/-felvétel, alkalmazáskezelés, fájlműveletek, rendszer-kapcsolók
-(wifi/bluetooth/repülő üzemmód/hangerő), naplók és értesítések – mindezt strukturált
-UI-hierarchiával, hogy a modellnek ne kelljen képfelismeréssel találgatnia, hova kell
-koppintani.
+**63 tool** egy komplett **Android eszköz-vezérlő** MCP szerverben. Nem csak „futtasd ezt az
+ADB parancsot” – hanem „**kezeld a telefont/tabletet**”: szemantikus UI-vezérlés (`tap_element`,
+`type_into` — nincs szükség koordináta-számolásra), képernyőkép/-felvétel, opcionális
+OCR-fallback, alkalmazáskezelés, fájlműveletek, rendszer-kapcsolók (wifi/bluetooth/repülő
+üzemmód/hangerő), naplók, értesítések és magasabb szintű workflow-tool-ok (`open_app_and_wait`,
+`fill_form`, `assert_text`) – mindezt strukturált UI-hierarchiával, hogy a modellnek ne kelljen
+képfelismeréssel találgatnia, hova kell koppintani.
 
 Elsődlegesen **Windows**-on fejlesztve és tesztelve (a legtöbb felhasználó ADB-vel Windows-on
 dolgozik), de mivel tisztán a szabványos `adb` binárisra épül, macOS-en és Linuxon is működik.
@@ -29,22 +30,53 @@ kezdeni – ahogy semmi más, ami nem exploit/feltörő eszköz.
 
 | Sima megközelítés | Android Control MCP |
 |---|---|
-| Nyers `adb shell` parancsok | **52** fókuszált tool természetes munkamegosztással |
+| Nyers `adb shell` parancsok | **63** fókuszált tool természetes munkamegosztással |
 | Találgatás képernyőkép alapján | `ui_dump`: pontos koordináták, szöveg, resource-id minden elemhez |
+| Koordináták hurcolása tool-ok között | `tap_element(text="Bejelentkezés")`, `type_into(...)` — kereső+cselekvő egy hívásban |
 | Vak hozzáférés | `SAFE` / `NORMAL` / `ADMIN` mód + kockázat-alapú megerősítés visszafordíthatatlan műveleteknél |
-| Fix `sleep` várakozások | `wait_for_text`: csak addig vár, amíg tényleg meg nem jelenik a keresett elem |
+| Fix `sleep` várakozások | `wait_for_text`/`wait_for_element`/`wait_until_screen_changes`: csak addig vár, amíg valóban szükséges |
 | Csak egy eszköz | Tetszőleges számú csatlakoztatott eszköz, `serial` paraméterrel választva |
-| Nincs kontextus-tudat | `foreground_app`: a modell tudja, épp melyik alkalmazás/aktivitás van elöl |
+| Nincs kontextus-tudat | `observe_screen`: egy hívásban eloterű app + képernyőméret + UI-elemek |
+| Nyers szöveges UI-dump | Strukturált elem-lista (id/text/resource_id/class/clickable/enabled/bounds/center) |
 
-### Sebesség — őszintén
+### Biztonság
 
-A tiszta `adb shell input`/`screencap` út tipikusan **100-300 ms**/koppintás és lassabb
-képernyőkép-készítés. Létezik gyorsabb megoldás: a [scrcpy-mcp](https://github.com/JuanCF/scrcpy-mcp)
-projekt scrcpy bináris vezérlő-protokollját használva **~5-10 ms**/input és **~33 ms**/képernyőkép
-sebességet ér el (10-50×-ös gyorsulás sima ADB-hez képest). Ez az Android Control MCP jelenlegi
-(v0.1.0) verziójában **még nincs implementálva** — a `scrcpy`-alapú gyors bemenet/screencap a
-következő verzió elsődleges célja (lásd [Fejlesztés](#fejlesztés) / GitHub Issues). Jelenleg
-tisztán ADB-re épülünk, ami egyszerűbb és függőségmentes, de lassabb.
+Minden shell-stringbe kerülő dinamikus paraméter (fájlútvonal, csomagnév, keyevent-kód,
+szöveg) **idézett** (`shlex.quote`) vagy **formailag validált** (pl. csomagnév regex),
+mielőtt egy `adb shell` parancssorba interpolálódik — így nincs shell injection felszín.
+A `shell_run` tool szándékos kivétel: az kifejezetten tetszőleges parancs futtatására
+való, ezért **ADMIN** módot és explicit megerősítést igényel. A mód-szintek (lásd lent) és
+a kódban ténylegesen kikényszerített szintek most már **egyeznek** (korábbi verzióban
+néhány visszafordíthatatlan művelet — APK telepítés, alkalmazás eltávolítása/adattörlése,
+`shell_run`, `reboot` — tévesen `NORMAL` alatt is elérhető volt; ez javítva).
+
+### Sebesség
+
+A tiszta `adb shell input`/`screencap` út tipikusan **100-300 ms**/koppintás. Létezik
+gyorsabb megoldás: a [scrcpy-mcp](https://github.com/JuanCF/scrcpy-mcp) projekt scrcpy
+bináris vezérlő-protokollját használva **~5-10 ms**/input sebességet ér el. Ez a projekt
+mostantól tartalmazza ennek **opcionális, kísérleti** implementációját
+(`android_control_mcp/backends.py`, a `scrcpy-client` Python csomagra építve):
+
+```bash
+pip install -e ".[scrcpy]"
+ANDROID_CONTROL_SCRCPY=1 android-control-mcp
+```
+
+**Fontos, őszinte figyelmeztetés:** ez a réteg **nincs validálva valódi Android eszközön**
+(ebben a fejlesztési menetben nem volt csatlakoztatott telefon). A hibakezelés úgy készült,
+hogy bármilyen hiba (hiányzó csomag, sikertelen kapcsolódás, protokoll-eltérés) esetén
+**csendben és véglegesen ADB-re esik vissza** az adott munkamenetben — tehát alapból (env
+változó nélkül) és hiba esetén is mindig a bizonyítottan működő ADB-utat kapod. Éles
+teszteléséhez valódi eszköz kell — ez a következő lépés.
+
+### OCR/vision fallback
+
+Az `ui_dump`/`observe_screen` az uiautomator hierarchiára épül, ami WebView-ban, Canvas-on
+rajzolt tartalomnál, játékoknál vagy egyedi Compose UI-nál üres listát adhat. Ilyenkor az
+`ocr_screen` tool (opcionális `pip install -e ".[ocr]"` + rendszerszintű Tesseract OCR
+telepítés után) képernyőkép-alapú szövegfelismerést végez, koordinátákkal. Telepítés nélkül
+világos, konkrét hibaüzenetet ad (mit kell telepíteni), nem hasal el.
 
 ---
 
@@ -52,13 +84,17 @@ tisztán ADB-re épülünk, ami egyszerűbb és függőségmentes, de lassabb.
 
 ### 1. réteg – mód-kapu
 
-A szerver **egy** módban fut (`ANDROID_CONTROL_MODE`, alap: `normal`).
+A szerver **egy** módban fut (`ANDROID_CONTROL_MODE`, alap: `normal`) — ez rögzíti a
+**felső határt** (`max_mode`) is: a `set_mode` tool ennél magasabbra soha nem tud menni,
+de a rögzített határon belül szabadon oda-vissza kapcsolható (pl. egy `admin`-nal indított
+szerveren `safe`→`normal`→`admin` bármelyik irányba, korábbi hiba volt, hogy egyszer
+lemenve nem lehetett visszamenni — javítva, lásd `tests/test_set_mode_tool.py`).
 
 | Mód | Mit enged |
 |---|---|
-| **SAFE** | csak olvasás: `device_info`, `screenshot`, `ui_dump`, `logcat_tail`, `list_apps`, fájlolvasás |
-| **NORMAL** | a fentiek **+** koppintás/gépelés/gesztusok, alkalmazás indítása/leállítása, fájlműveletek, rendszer-kapcsolók (wifi/bluetooth/repülő mód/hangerő) |
-| **ADMIN** | a fentiek **+** alkalmazás eltávolítása/adattörlése, APK telepítés, újraindítás, teljes mentés, tetszőleges shell parancs |
+| **SAFE** | csak olvasás: `device_info`, `screenshot`, `ui_dump`, `find_element`, `observe_screen`, `logcat_tail`, `list_apps`, fájlolvasás |
+| **NORMAL** | a fentiek **+** koppintás/gépelés/gesztusok, `tap_element`/`type_into`, alkalmazás indítása/leállítása, fájlműveletek (írás/törlés), rendszer-kapcsolók (wifi/bluetooth/repülő mód/hangerő), workflow-tool-ok |
+| **ADMIN** | a fentiek **+** `install_apk`, `uninstall_app`, `clear_app_data`, `reboot`, `backup_apps_data`, `shell_run` (tetszőleges parancs) |
 
 ### 2. réteg – kockázat-kapu (`ask_permission`)
 
@@ -137,16 +173,18 @@ Alap hely: `~/.config/android-control-mcp/config.json` (vagy `ANDROID_CONTROL_CO
 
 ---
 
-## Tool-katalógus (összesen 52 tool)
+## Tool-katalógus (összesen 63 tool)
 
 | Kategória | Tool-ok | Db |
 |---|---|--:|
 | Eszköz / állapot | `device_list` · `device_info` · `battery_status` · `storage_usage` · `screen_state` · `network_status` · `foreground_app` · `set_mode` | 8 |
-| Képernyő / „látás” | `screenshot` · `screen_record` · `ui_dump` · `wait_for_text` | 4 |
+| Képernyő / „látás” | `screenshot` · `screen_record` · `ui_dump` · `observe_screen` · `ocr_screen` · `wait_for_text` | 6 |
+| Szemantikus UI-vezérlés | `find_element` · `tap_element` · `type_into` · `scroll_to` · `wait_for_element` | 5 |
 | Bemenet / gesztusok | `tap` · `double_tap` · `long_press` · `swipe` · `drag` · `scroll` · `type_text` · `press_key` · `paste_clipboard` | 9 |
 | Alkalmazások | `list_apps` · `app_info` · `launch_app` · `open_url` · `stop_app` · `install_apk` · `uninstall_app` · `clear_app_data` | 8 |
 | Fájlok | `list_files` · `read_file` · `file_info` · `pull_file` · `push_file` · `make_dir` · `move_path` · `delete_path` | 8 |
 | Rendszer-kapcsolók | `wifi_toggle` · `bluetooth_toggle` · `airplane_mode_toggle` · `set_volume` · `open_notification_panel` · `screen_orientation` | 6 |
+| Workflow (összetett) | `open_app_and_wait` · `fill_form` · `wait_until_screen_changes` · `assert_text` | 4 |
 | Rendszer | `logcat_tail` · `list_notifications` · `running_processes` · `wait` · `shell_run` · `reboot` · `backup_apps_data` · `connect_wifi` · `disconnect_device` | 9 |
 
 Teljes, mindig aktuális lista: `android-control-mcp --list-tools`
@@ -178,6 +216,12 @@ Teljes, mindig aktuális lista: `android-control-mcp --list-tools`
 > **„Nézd meg, mit ír ki a logcat, amikor megnyitom az appot.”**
 > `launch_app` → rövid `wait` → `logcat_tail`
 
+> **„Jelentkezz be ezzel az e-maillel és jelszóval.”**
+> `fill_form({"com.app:id/email": "...", "com.app:id/password": "..."})` → `tap_element(text="Bejelentkezés")`
+
+> **„Görgess le, amíg megtalálod az Adatvédelem menüpontot, és nyisd meg.”**
+> `scroll_to("Adatvédelem")` → `tap_element(text="Adatvédelem")`
+
 ---
 
 ## Fejlesztés
@@ -185,8 +229,15 @@ Teljes, mindig aktuális lista: `android-control-mcp --list-tools`
 ```bash
 pip install -e ".[dev]"
 python -m py_compile $(git ls-files '*.py')
+pytest tests/ -v
 ruff check .
 ```
+
+A `tests/` alatt 49 automatikus teszt van (mind zöld, ADB/eszköz nélkül futtatható) — az
+UI-dump parszolásra, a csomagnév/keyevent-validációra, a mód-kapu logikájára (a `set_mode`
+javított ceiling-viselkedésére a tényleges regisztrált tool-on keresztül) és a scrcpy/OCR
+graceful-fallback viselkedésre. GitHub Actions CI (`.github/workflows/tests.yml`) minden
+push-nál lefuttatja Python 3.10 és 3.13 alatt is.
 
 ---
 

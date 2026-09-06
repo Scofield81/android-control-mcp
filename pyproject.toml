@@ -19,6 +19,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff>=0.4", "pytest>=8"]
+# KISERLETI, opt-in gyorsitott bemenet (lasd android_control_mcp/backends.py) -
+# csak akkor aktivalodik, ha az ANDROID_CONTROL_SCRCPY=1 IS be van kapcsolva.
+scrcpy = ["scrcpy-client>=0.4"]
+# Opcionalis OCR-fallback (lasd android_control_mcp/ocr.py) elemzetlen/WebView/
+# Canvas kepernyokhoz, ahol az uiautomator nem lat hasznalhato elemeket. A
+# Tesseract OCR motor binarisat KULON, rendszerszinten kell telepiteni.
+ocr = ["pytesseract>=0.3.10", "Pillow>=10"]
 
 [project.scripts]
 android-control-mcp = "android_control_mcp.__main__:main"
@@ -29,3 +36,6 @@ packages = ["android_control_mcp"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

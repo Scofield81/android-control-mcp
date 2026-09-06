@@ -1,4 +1,10 @@
-"""Fajlmuveletek az eszkozon: listazas, olvasas, fel-/letoltes, torles."""
+"""Fajlmuveletek az eszkozon: listazas, olvasas, fel-/letoltes, torles.
+
+Minden itt szereplo utvonal `sh_quote()`-tal van idezve, mielott egy `adb
+shell` parancssorba interpolalodik - igy egy '/sdcard; rm -rf /' tipusu
+utvonal csak egy (nem letezo) fajlnevkent probalkozik, nem tovabbi
+parancskent hajtodik vegre.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +17,7 @@ from ..audit import audit
 from ..config import Mode
 from ..formatting import truncate
 from ..permissions import RISK_DELETE_PATH, ask_permission, require_mode
-from .common import SerialArg
+from .common import SerialArg, sh_quote
 
 
 def register(mcp) -> None:
@@ -20,7 +26,7 @@ def register(mcp) -> None:
     async def list_files(remote_path: str = "/sdcard", serial: SerialArg = None) -> str:
         """Fajlok/konyvtarak listazasa az eszkozon egy adott utvonalon."""
         real_serial = await resolve_serial(serial)
-        out = await run_shell(f"ls -la {remote_path}", serial=real_serial)
+        out = await run_shell(f"ls -la {sh_quote(remote_path)}", serial=real_serial)
         return truncate(out.strip()) or "(ures konyvtar)"
 
     @mcp.tool()
@@ -31,14 +37,15 @@ def register(mcp) -> None:
         """
         real_serial = await resolve_serial(serial)
         max_bytes = max(1, min(max_bytes, 500_000))
-        out = await run_shell(f"head -c {max_bytes} {remote_path}", serial=real_serial)
+        out = await run_shell(f"head -c {int(max_bytes)} {sh_quote(remote_path)}", serial=real_serial)
         return truncate(out)
 
     @mcp.tool()
     async def file_info(remote_path: str, serial: SerialArg = None) -> str:
         """Egy fajl/konyvtar metaadatai: meret, jogosultsag, modositas ideje."""
         real_serial = await resolve_serial(serial)
-        out = await run_shell(f"stat {remote_path} 2>&1 || ls -la {remote_path}", serial=real_serial)
+        quoted = sh_quote(remote_path)
+        out = await run_shell(f"stat {quoted} 2>&1 || ls -la {quoted}", serial=real_serial)
         return out.strip()
 
     @mcp.tool()
@@ -47,6 +54,9 @@ def register(mcp) -> None:
 
         Igy lehet pl. fenykepeket, WhatsApp mediat vagy naplofajlokat menteni
         egy torott kijelzoju, de mar korabban engedelyezett (parositott) eszkozrol.
+        A biztonsagos utvonal-kezeles kulon fontos, mert 'adb pull' argumentumkent
+        (nem shell-stringkent) kapja meg - itt nincs is shell-injekcios felszin,
+        csak a helyi celmappa letezeset ellenorizzuk.
         """
         require_mode(Mode.NORMAL, what="fajl letoltese")
         real_serial = await resolve_serial(serial)
@@ -72,7 +82,7 @@ def register(mcp) -> None:
         """Uj konyvtar letrehozasa az eszkozon."""
         require_mode(Mode.NORMAL, what="konyvtar letrehozasa")
         real_serial = await resolve_serial(serial)
-        await run_shell(f"mkdir -p {remote_path}", serial=real_serial)
+        await run_shell(f"mkdir -p {sh_quote(remote_path)}", serial=real_serial)
         return f"Letrehozva: {remote_path}"
 
     @mcp.tool()
@@ -80,7 +90,7 @@ def register(mcp) -> None:
         """Fajl/konyvtar athelyezese vagy atnevezese az eszkozon (helyben, nem a gepre)."""
         require_mode(Mode.NORMAL, what="fajl athelyezese")
         real_serial = await resolve_serial(serial)
-        out = await run_shell(f"mv {source} {destination}", serial=real_serial)
+        out = await run_shell(f"mv {sh_quote(source)} {sh_quote(destination)}", serial=real_serial)
         return out.strip() or f"Athelyezve: {source} -> {destination}"
 
     @mcp.tool()
@@ -91,6 +101,6 @@ def register(mcp) -> None:
         await ask_permission(ctx, action=f"Torles: {remote_path}", details=reason,
                               risk=risk, serial=serial)
         real_serial = await resolve_serial(serial)
-        await run_shell(f"rm -rf {remote_path}", serial=real_serial)
+        await run_shell(f"rm -rf {sh_quote(remote_path)}", serial=real_serial)
         audit("delete_path", serial=real_serial, path=remote_path)
         return f"Torolve: {remote_path}"

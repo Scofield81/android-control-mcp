@@ -1,4 +1,9 @@
-"""Alkalmazas-kezeles: listazas, inditas, leallitas, telepites/eltavolitas."""
+"""Alkalmazas-kezeles: listazas, inditas, leallitas, telepites/eltavolitas.
+
+Minden csomagnev `validate_package_name()`-en megy at, mielott shell-stringbe
+kerulne - ez nem csak idezi, hanem eleve VISSZAUTASITJA az ervenytelen formatumu
+bemenetet, mielott a parancs osszeall.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +21,7 @@ from ..permissions import (
     ask_permission,
     require_mode,
 )
-from .common import SerialArg
+from .common import SerialArg, sh_quote, validate_package_name
 
 
 def register(mcp) -> None:
@@ -42,8 +47,9 @@ def register(mcp) -> None:
     @mcp.tool()
     async def app_info(package: str, serial: SerialArg = None) -> str:
         """Egy alkalmazas reszletei: verzio, telepites datuma, engedelyek osszefoglaloja."""
+        package = validate_package_name(package)
         real_serial = await resolve_serial(serial)
-        out = await run_shell(f"dumpsys package {package}", serial=real_serial, timeout=15.0)
+        out = await run_shell(f"dumpsys package {sh_quote(package)}", serial=real_serial, timeout=15.0)
         if "Unable to find package" in out or not out.strip():
             return f"Nem talalhato ilyen csomag: {package}"
 
@@ -71,13 +77,14 @@ def register(mcp) -> None:
         annak, hogy egy tetszoleges alkalmazast egyetlen csomagnevvel elinditsunk.
         """
         require_mode(Mode.NORMAL, what="alkalmazas inditasa")
+        package = validate_package_name(package)
         real_serial = await resolve_serial(serial)
         if activity:
             target = activity if "/" in activity else f"{package}/{activity}"
-            out = await run_shell(f"am start -n {target}", serial=real_serial)
+            out = await run_shell(f"am start -n {sh_quote(target)}", serial=real_serial)
         else:
             out = await run_shell(
-                f"monkey -p {package} -c android.intent.category.LAUNCHER 1",
+                f"monkey -p {sh_quote(package)} -c android.intent.category.LAUNCHER 1",
                 serial=real_serial,
             )
         audit("launch_app", serial=real_serial, package=package, activity=activity)
@@ -91,8 +98,7 @@ def register(mcp) -> None:
         - az Android eldonti az intent alapjan, melyik app kezelje)."""
         require_mode(Mode.NORMAL, what="URL megnyitasa")
         real_serial = await resolve_serial(serial)
-        quoted = url.replace('"', '\\"')
-        out = await run_shell(f'am start -a android.intent.action.VIEW -d "{quoted}"',
+        out = await run_shell(f"am start -a android.intent.action.VIEW -d {sh_quote(url)}",
                                serial=real_serial)
         audit("open_url", serial=real_serial, url=url)
         if "Error" in out:
@@ -103,8 +109,9 @@ def register(mcp) -> None:
     async def stop_app(package: str, serial: SerialArg = None) -> str:
         """Alkalmazas eroszakos leallitasa ('force-stop') - mint a Beallitasokban."""
         require_mode(Mode.NORMAL, what="alkalmazas leallitasa")
+        package = validate_package_name(package)
         real_serial = await resolve_serial(serial)
-        await run_shell(f"am force-stop {package}", serial=real_serial)
+        await run_shell(f"am force-stop {sh_quote(package)}", serial=real_serial)
         audit("stop_app", serial=real_serial, package=package)
         return f"Leallitva: {package}"
 
@@ -115,9 +122,9 @@ def register(mcp) -> None:
 
         A local_path a GEPEDEN levo APK fajl elerhetosege (nem az eszkozon).
         Csak megbizhato forrasbol szarmazo APK-t telepits - ismeretlen forrasu
-        fajl telepitesehez a szerver megerositest ker.
+        fajl telepitesehez a szerver megerositest ker. ADMIN modot igenyel.
         """
-        require_mode(Mode.NORMAL, what="APK telepitese")
+        require_mode(Mode.ADMIN, what="APK telepitese")
         if not os.path.isfile(local_path):
             return f"A fajl nem talalhato: {local_path}"
 
@@ -138,8 +145,9 @@ def register(mcp) -> None:
 
     @mcp.tool()
     async def uninstall_app(package: str, ctx: Context, serial: SerialArg = None) -> str:
-        """Alkalmazas eltavolitasa a csomagneve alapjan. Megerositest ker."""
-        require_mode(Mode.NORMAL, what="alkalmazas eltavolitasa")
+        """Alkalmazas eltavolitasa a csomagneve alapjan. ADMIN modot igenyel, megerositest ker."""
+        require_mode(Mode.ADMIN, what="alkalmazas eltavolitasa")
+        package = validate_package_name(package)
         risk, reason = RISK_APP_UNINSTALL
         await ask_permission(
             ctx, action=f"Alkalmazas eltavolitasa: {package}", details=reason,
@@ -155,15 +163,17 @@ def register(mcp) -> None:
         """Egy alkalmazas osszes helyi adatanak torlese (mint 'Adatok torlese' a Beallitasokban).
 
         Ez visszaallitja az alkalmazast telepites utani, "uj" allapotba - a
-        bejelentkezesek, mentesek, gyorsitotar mind elveszik. Megerositest ker.
+        bejelentkezesek, mentesek, gyorsitotar mind elveszik. ADMIN modot
+        igenyel, megerositest ker.
         """
-        require_mode(Mode.NORMAL, what="alkalmazas adatainak torlese")
+        require_mode(Mode.ADMIN, what="alkalmazas adatainak torlese")
+        package = validate_package_name(package)
         risk, reason = RISK_APP_CLEAR_DATA
         await ask_permission(
             ctx, action=f"Alkalmazas adatainak torlese: {package}", details=reason,
             risk=risk, serial=serial,
         )
         real_serial = await resolve_serial(serial)
-        out = await run_shell(f"pm clear {package}", serial=real_serial)
+        out = await run_shell(f"pm clear {sh_quote(package)}", serial=real_serial)
         audit("clear_app_data", serial=real_serial, package=package, result=out.strip())
         return out.strip()
