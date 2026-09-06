@@ -1,0 +1,8 @@
+# Ezeket a linkeket a GitHub a repo "Sponsor" gombja alatt jeleníti meg.
+# Mindhárom valódi, éles Stripe Payment Link (egyszeri, önkéntes támogatás -
+# nem előfizetés, nem termékvásárlás, nem biztosít külön jogosultságot).
+custom: [
+  "https://donate.stripe.com/00w8wQbRu4Vzfzn3JP38400",
+  "https://donate.stripe.com/14A9AUaNqfAd9aZ6W138401",
+  "https://donate.stripe.com/fZu4gA4p23Rv4UJ5RX38402",
+]

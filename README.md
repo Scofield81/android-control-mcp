@@ -1,5 +1,13 @@
 # Android Control MCP
 
+**Magyar** | [English](README_EN.md)
+
+📖 [Dokumentáció](#dokumentáció) · 🐛 [Hibajelentés](../../issues/new?template=bug_report.yml) ·
+💡 [Funkciójavaslat](../../issues/new?template=feature_request.yml) ·
+💬 [Discussions](../../discussions) · ☕ [Támogatás](#-támogasd-a-fejlesztést)
+
+---
+
 **71 tool** egy komplett **Android eszköz-vezérlő** MCP szerverben. Nem csak „futtasd ezt az
 ADB parancsot” – hanem „**kezeld a telefont/tabletet**”: szemantikus UI-vezérlés (`tap_element`,
 `type_into` — nincs szükség koordináta-számolásra), képernyőkép/-felvétel, opcionális
@@ -288,9 +296,37 @@ gyorsan kilépő folyamat NEM regisztrálódhat sikeres sessionként — lásd `
 
 ## Visszajelzés, hibajelentés, ötletek
 
-Ha hibát találsz, vagy javaslatod van egy új funkcióhoz/tool-hoz, nyiss egy
-**[GitHub Issue-t](../../issues)** ebben a repóban. Kód-hozzájárulást (pull request) egyelőre
-nem fogadunk — lásd [CONTRIBUTING.md](CONTRIBUTING.md) és a [Licenc](#licenc) szakaszt.
+Ha hibát találsz, nyiss egy **[hibajelentést](../../issues/new?template=bug_report.yml)**;
+funkció-ötlethez egy **[funkciójavaslatot](../../issues/new?template=feature_request.yml)**;
+ha egy telefonodon kipróbáltad a Rescue módot, egy
+**[eszköz-kompatibilitási bejelentést](../../issues/new?template=device_compatibility.yml)**
+— ez utóbbi közvetlenül segít bővíteni a kompatibilitási adatbázist (előbb ellenőrizzük,
+mielőtt hivatalos bejegyzésként bekerülne).
+
+Kérdéshez, beszélgetéshez, ötleteléshez inkább a **[Discussions](../../discussions)**
+felület való, nem az Issues. Kód-hozzájárulást (pull request) egyelőre nem fogadunk — lásd
+[CONTRIBUTING.md](CONTRIBUTING.md) és a [Licenc](#licenc) szakaszt.
+
+---
+
+## ☕ Támogasd a fejlesztést
+
+Az Android Control MCP ingyenesen használható.
+Ha hasznosnak találod a projektet és szeretnéd támogatni a további fejlesztést, megteheted
+az alábbi lehetőségek egyikével.
+
+A támogatás teljesen önkéntes.
+A támogatás nem szükséges az ingyenes verzió használatához és nem biztosít külön funkciókat
+vagy előnyöket.
+
+| | | |
+|---|---|---|
+| ☕ **Kávé** | 1 000 Ft (~$3) | [Támogatom →](https://donate.stripe.com/00w8wQbRu4Vzfzn3JP38400) |
+| ☕☕ **Fejlesztés támogatása** | 1 600 Ft (~$5) | [Támogatom →](https://donate.stripe.com/14A9AUaNqfAd9aZ6W138401) |
+| 🚀 **Nagy támogatás** | 3 100 Ft (~$10) | [Támogatom →](https://donate.stripe.com/fZu4gA4p23Rv4UJ5RX38402) |
+
+Mindhárom a Stripe saját, biztonságos fizetési oldalára visz (bankkártya, Apple Pay, Google
+Pay) — egyszeri, önkéntes tranzakció, nincs hozzá szükség Android Control MCP fiókra.
 
 ## Licenc
 

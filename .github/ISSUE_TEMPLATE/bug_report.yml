@@ -1,0 +1,122 @@
+name: 🐛 Hibajelentés / Bug report
+description: Valami nem úgy működik, ahogy kellene
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Köszönjük, hogy időt szánsz egy hibajelentésre! Minél több információt adsz meg,
+        annál gyorsabban lehet kideríteni, mi történt.
+
+  - type: input
+    id: version
+    attributes:
+      label: Android Control MCP verzió / commit
+      description: "`android-control-mcp --version`, vagy a git commit hash"
+      placeholder: pl. 0.1.0 / 81c40b0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operációs rendszer (a gépen, ahol az MCP szerver fut)
+      options:
+        - Windows
+        - Linux
+        - macOS
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python verzió
+      placeholder: "pl. 3.13.14 (python --version)"
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android verzió (a telefonon/tableten)
+      placeholder: pl. Android 14
+    validations:
+      required: false
+
+  - type: input
+    id: device_model
+    attributes:
+      label: Telefon/tablet gyártója és pontos modellje
+      placeholder: pl. Samsung Galaxy S23
+    validations:
+      required: false
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Kapcsolat típusa
+      options:
+        - USB
+        - Wi-Fi (adb connect / vezeték nélküli hibakeresés)
+        - Nem releváns
+    validations:
+      required: false
+
+  - type: dropdown
+    id: adb_state
+    attributes:
+      label: ADB állapota (`adb devices` kimenete alapján)
+      options:
+        - device (engedélyezve)
+        - unauthorized
+        - offline / nincs eszköz
+        - Nem releváns
+    validations:
+      required: false
+
+  - type: input
+    id: scrcpy_version
+    attributes:
+      label: scrcpy verzió (ha a hiba a Rescue móddal kapcsolatos)
+      placeholder: "scrcpy --version kimenete, ha releváns"
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reprodukciós lépések
+      description: Pontosan mit csináltál (melyik tool-t hívtad, milyen paraméterekkel)?
+      placeholder: |
+        1. `device_capabilities` hívása
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Várt eredmény
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tényleges eredmény
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log / hibaüzenet / stderr
+      description: >-
+        Ha van, illeszd be a szerver stderr-kimenetét vagy az audit naplót
+        (`%LOCALAPPDATA%\android-control-mcp\audit.log` Windows-on).
+        **Ellenőrizd, hogy nincs benne érzékeny adat** (pl. valódi PIN-kód,
+        telefonszám), mielőtt beilleszted.
+      render: text
+    validations:
+      required: false

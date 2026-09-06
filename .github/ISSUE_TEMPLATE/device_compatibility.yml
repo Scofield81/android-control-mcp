@@ -1,0 +1,122 @@
+name: 📱 Eszköz-kompatibilitási bejelentés / Device compatibility report
+description: >-
+  Segíts bővíteni a kompatibilitási adatbázist egy telefon/tablet
+  tényleges (kipróbált) képességeivel.
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Fontos:** egy ilyen bejelentés önmagában **nem** kerül be automatikusan
+        "hivatalosan ellenőrzött" (`supported`) bejegyzésként a
+        `rescue/data/devices.json` adatbázisba — előbb ellenőrizzük, lehetőleg a
+        gyártó hivatalos dokumentációjával összevetve. A közösségi visszajelzés
+        viszont nagyon hasznos ahhoz, hogy tudjuk, mit érdemes utánanézni.
+
+  - type: input
+    id: manufacturer
+    attributes:
+      label: Gyártó
+      placeholder: pl. Samsung
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Pontos modell
+      placeholder: pl. Galaxy S23 Ultra (SM-S918B)
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android verzió
+      placeholder: pl. Android 14, One UI 6.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: usb_host
+    attributes:
+      label: USB Host / OTG
+      options:
+        - "Igen (kipróbálva)"
+        - "Nem (kipróbálva)"
+        - Nem tudom / nem próbáltam
+    validations:
+      required: false
+
+  - type: dropdown
+    id: adb
+    attributes:
+      label: ADB (USB hibakeresés) engedélyezhető és működik?
+      options:
+        - "Igen"
+        - "Nem"
+        - Nem tudom / nem próbáltam
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scrcpy_mirror
+    attributes:
+      label: scrcpy tükrözés (rescue_start_mirror) működik?
+      options:
+        - "Igen"
+        - "Nem"
+        - Nem próbáltam
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scrcpy_otg
+    attributes:
+      label: scrcpy OTG/AOA (rescue_start_otg) működik?
+      options:
+        - "Igen"
+        - "Nem"
+        - Nem próbáltam
+    validations:
+      required: false
+
+  - type: dropdown
+    id: wired_video
+    attributes:
+      label: Vezetékes videó-kimenet (USB-C → HDMI/DisplayPort adapterrel)
+      options:
+        - "Igen (kipróbálva)"
+        - "Nem (kipróbálva)"
+        - Nem tudom / nem próbáltam
+    validations:
+      required: false
+
+  - type: dropdown
+    id: dex
+    attributes:
+      label: DeX / gyártói asztali mód
+      options:
+        - "Igen, vezetékesen"
+        - "Igen, vezeték nélkül"
+        - "Igen, DeX on PC"
+        - Nem támogatott
+        - Nem tudom / nem próbáltam
+    validations:
+      required: false
+
+  - type: input
+    id: adapter
+    attributes:
+      label: Tesztelt adapter/hardver (ha releváns)
+      placeholder: pl. Anker USB-C - HDMI adapter, konkrét márka/típus
+    validations:
+      required: false
+
+  - type: textarea
+    id: note
+    attributes:
+      label: Megjegyzés
+      description: Bármi más, ami hasznos lehet (hibaüzenet, meglepő viselkedés, forrás-link).
+    validations:
+      required: false

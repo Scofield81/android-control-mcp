@@ -135,6 +135,18 @@
     },
     {
       "manufacturer": "Xiaomi",
+      "model_pattern": "Redmi Note 12$",
+      "wired_video_output": "unsupported",
+      "displayport_alt_mode": "unsupported",
+      "samsung_dex_wired": "unsupported",
+      "samsung_dex_pc": "unsupported",
+      "aoa_otg_note": "USB Host/OTG kulon ellenorizendo - ez a bejegyzes csak a video-kimenetre vonatkozik.",
+      "source": "Xiaomi hivatalos GYIK: https://www.mi.com/global/support/faq/details/KA-564504/ (\"Does REDMI Note 12 support HDMI output via the USB-C port?\")",
+      "verified_date": "2026-09-06",
+      "note": "A kozvetlen oldal-lekerdezes 403-at adott (bot-vedelem), ezert a valasz szoveget nem tudtam sajat magam, kozvetlenul betoltve elolvasni - az URL es a KA-XXXXX minta ugyanaz, mint a tobbi mar ellenorzott mi.com hivatalos FAQ-bejegyzesnel ebben az adatbazisban, es a keresomotor indexe kozvetlenul a mi.com oldalrol idezi 'nem tamogatott' valaszt. Ha ellenorzod kozvetlenul a bongeszodben es eltero valaszt talalsz, jelezd."
+    },
+    {
+      "manufacturer": "Xiaomi",
       "model_pattern": "POCO X7( Pro)?",
       "wired_video_output": "unsupported",
       "displayport_alt_mode": "unsupported",

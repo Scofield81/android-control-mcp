@@ -39,19 +39,23 @@ Kis, szándékosan konzervatív, bővíthető JSON. Minden bejegyzéshez **forr�
 
 | Gyártó | Modell(ek) | Vezetékes videó | Forrás |
 |---|---|---|---|
-| Google | Pixel 8 / 8 Pro / 8a | ✅ támogatott (Android 14 QPR2+) | Google hivatalos bejelentés, 2024-06 |
-| Google | Pixel 9 (összes) | ✅ támogatott | Google hivatalos bejelentés, 2024-06 |
-| Samsung | Galaxy S8–S23, Note 8–20 | ✅ támogatott (DeX) | Samsung DeX dokumentáció — *community/scrcpy jelentések, ebben a menetben nem egyenként újra-ellenőrizve* |
-| Xiaomi | 15 | ✅ támogatott | *community/scrcpy jelentés, nem független forrásból ellenőrizve* |
-| Xiaomi | 15T, POCO X7 | ❌ nem támogatott (OTG igen, videó nem) | *community/scrcpy jelentés* |
-| Xiaomi | Redmi Note 12 | ❌ nem támogatott | *community/scrcpy jelentés* |
+| Google | Pixel 8 / 8 Pro / 8a | ✅ támogatott (Android 14 QPR2+) | Google hivatalos funkció-bevezetés, sajtóval megerősítve (androidauthority.com/androidpolice.com, 2024-06) |
+| Google | Pixel 9 (összes) | ✅ támogatott | Google hivatalos funkció-bevezetés, sajtóval megerősítve (2024-06) |
+| Samsung | Galaxy S8–S26, Note 8/9/10/20, Z Fold (összes), A90 5G, Tab S4–S11 | ✅ támogatott (DeX, vezetékes) | [Samsung hivatalos DeX GYIK](https://www.samsung.com/us/support/answer/ANS10001972/) |
+| Samsung | Galaxy Z Flip7/8 (nem FE) | ✅ támogatott (DeX) | Samsung hivatalos DeX GYIK, ugyanaz mint fent |
+| Samsung | Galaxy Z Flip7 FE és korábbi Flip modellek | ❌ nem támogatott (DeX) | Samsung hivatalos DeX GYIK — explicit kizárva |
+| Samsung | Galaxy Tab S9 FE / S9 FE+ / S10 FE / S10 FE+ / S10 Lite | ❌ nem támogatott (HDMI-kimenet) | Samsung hivatalos DeX GYIK — explicit kizárva |
+| Xiaomi | 15 | ✅ támogatott (vezetékes videó) | [Xiaomi hivatalos GYIK (KA-544001)](https://www.mi.com/global/support/faq/details/KA-544001/) |
+| Xiaomi | 15T | ❌ nem támogatott (OTG igen, videó nem) | [Xiaomi hivatalos GYIK (KA-607966)](https://www.mi.com/global/support/faq/details/KA-607966/) |
+| Xiaomi | POCO X7 / X7 Pro | ❌ nem támogatott (OTG igen, videó nem) | [Xiaomi hivatalos GYIK (KA-524823 / KA-528066)](https://www.mi.com/global/support/faq/details/KA-524823/) |
+| Xiaomi | Redmi Note 12 | ❌ nem támogatott (DP/HDMI) | [Xiaomi hivatalos GYIK (KA-564504)](https://www.mi.com/global/support/faq/details/KA-564504/) — a közvetlen oldal-lekérdezés bot-védelem miatt 403-at adott, a forrás a keresőmotor indexén és az URL/KA-minta egyezésén alapul; lásd a `devices.json` `note` mezőjét |
 
-**Fontos átláthatósági megjegyzés**: a Google Pixel-bejegyzéseket ebben a fejlesztési
-menetben friss webes kereséssel ellenőriztük (2026-09-06). A Samsung/Xiaomi bejegyzések
-korábbi (a felhasználó review-jában megadott) állítások — ezeket **nem** ellenőriztük
-egyenként elsődleges forrásból ebben a menetben, ezért `source` mezőjük ezt explicit jelzi.
-Mielőtt éles döntést hoznál egy adott telefonról, ellenőrizd a gyártó saját, aktuális
-dokumentációját.
+**Átláthatósági megjegyzés**: minden fenti bejegyzés a gyártó saját hivatalos dokumentációjára
+hivatkozik (nem sajtóoldalra vagy community/scrcpy jelentésre) — a pontos forrás-URL-eket lásd
+az `android_control_mcp/rescue/data/devices.json` `source` mezőiben. Mielőtt éles döntést
+hoznál egy adott telefonról, mindenképp ellenőrizd a gyártó saját, aktuális dokumentációját —
+ezek a listák (főleg a Samsung DeX-kompatibilitás) modellenként és szoftververziónként
+változhatnak.
 
 ## Bővítés
 

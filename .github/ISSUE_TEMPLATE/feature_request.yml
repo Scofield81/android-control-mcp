@@ -1,0 +1,49 @@
+name: 💡 Funkciójavaslat / Feature request
+description: Ötleted van egy új tool-hoz vagy funkcióhoz
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ötletet a fejlesztéshez? Írd le, mit szeretnél elérni — a "miért" ugyanolyan
+        fontos, mint a "mit".
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Milyen problémát oldana meg?
+      description: Mit szeretnél csinálni, amit jelenleg nem (vagy csak nehezen) tudsz?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Javasolt megoldás
+      description: Ha van elképzelésed konkrét tool-névről/paraméterekről, írd le.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Melyik területet érinti leginkább?
+      options:
+        - UI-automatizálás (tap/swipe/ui_dump/elemek)
+        - Alkalmazáskezelés
+        - Fájlok
+        - Rendszer-kapcsolók
+        - Rescue mód (törött kijelző, scrcpy, AOA/OTG)
+        - Kompatibilitási adatbázis (új gyártó/modell)
+        - Dokumentáció
+        - Egyéb
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatívák, amiket már kipróbáltál
+      description: Van-e jelenleg megkerülő megoldás (akár több tool összefűzésével)?
+    validations:
+      required: false
