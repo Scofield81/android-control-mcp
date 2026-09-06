@@ -20,11 +20,22 @@ eszközzel.
 ## Fontos határ
 
 Ez az eszköz **nem képes és nem is célja** képernyőzár vagy más hozzáférés-védelem
-jogosulatlan megkerülése. Minden funkció kizárólag olyan eszközön működik, amelyen a **USB
-hibakeresés** már korábban engedélyezve és jóváhagyva lett a készülék saját képernyőjén – ez
-az Android beépített biztonsági mechanizmusa, amit ez a szoftver szándékosan nem próbál
-megkerülni. Ha egy eszköz zárolt és sosem lett jóváhagyva, ez a szoftver sem tud vele mit
-kezdeni – ahogy semmi más, ami nem exploit/feltörő eszköz.
+**jogosulatlan** megkerülése — sem PIN/minta próbálgatás (brute force), sem exploit, sem
+titkosítás-megkerülés.
+
+A legtöbb funkció (ADB-alapú automatizálás, `rescue_start_mirror`) csak olyan eszközön
+működik, amelyen a **USB hibakeresés** már korábban engedélyezve és jóváhagyva lett a
+készülék saját képernyőjén — ez az Android beépített biztonsági mechanizmusa. Egyetlen
+kivétel a **Rescue mód `rescue_start_otg`** funkciója: ez szándékosan **ADB nélkül** működik
+(AOAv2 HID-en keresztül a te saját fizikai USB billentyűzetedet/egeredet továbbítja a
+telefonnak) — pontosan azért, hogy egy törött kijelzőjű, sosem jóváhagyott saját eszközön is
+be tudd írni a **saját** PIN-edet/mintádat, ha a kijelző még látszik. Ez sem próbálgatás: te
+tudod, mit gépelsz, a szoftver semmit nem próbál kitalálni.
+
+Ha egy eszköz zárolt, a kijelzője nem használható **és** sosem lett jóváhagyva **és** nem
+támogat vezetékes külső kijelzőt, ez a szoftver sem tud vele mit kezdeni — ahogy semmi más,
+ami nem exploit/feltörő eszköz. Lásd [docs/RESCUE.md](docs/RESCUE.md) "A kemény korlát"
+szakaszát.
 
 ---
 
@@ -254,12 +265,15 @@ pytest tests/ -v
 ruff check .
 ```
 
-A `tests/` alatt 56 automatikus teszt van (mind zöld, ADB/eszköz/scrcpy nélkül futtatható) —
+A `tests/` alatt 62 automatikus teszt van (mind zöld, ADB/eszköz/scrcpy nélkül futtatható) —
 UI-dump parszolás, csomagnév/keyevent-validáció, a mód-kapu logikája (a `set_mode` javított
 ceiling-viselkedésére a tényleges regisztrált tool-on keresztül), OCR graceful-fallback, a
-kompatibilitási adatbázis (`unknown`-alapértelmezés helyessége), és a Rescue
-kapacitás-felismerés (ADB nélküli állapotban minden ADB-függő mező tényleg `unknown`
-marad-e). **Nincs GitHub Actions CI** — a tesztelés helyben történik, `pytest tests/ -v`-vel.
+kompatibilitási adatbázis (`unknown`-alapértelmezés helyessége), a Rescue
+kapacitás-felismerés (mock ADB-válaszokkal: `usb_host` a valódi `pm list features`
+kimenetből, nem az ADB-kapcsolat puszta létéből derül ki — lásd `tests/test_capabilities_usb_host.py`),
+és a scrcpy-session indítási health-check (valódi, rövid életű alfolyamatokkal: egy
+gyorsan kilépő folyamat NEM regisztrálódhat sikeres sessionként — lásd `tests/test_session.py`).
+**Nincs GitHub Actions CI** — a tesztelés helyben történik, `pytest tests/ -v`-vel.
 
 ## Dokumentáció
 

@@ -51,12 +51,22 @@ a jelen licenc nem módosít és nem korlátoz.
 
 6. Rendeltetésszerű használat
 
-A szoftver kizárólag olyan Android-eszközök vezérlésére/automatizálására készült, amelyekhez
-a felhasználó jogszerű hozzáféréssel rendelkezik (saját eszköz, vagy arra jogosultsággal
-bíró eszköz), és amelyeken az eszköz tulajdonosa/kezelője az ADB hibakeresést engedélyezte
-és jóváhagyta. A szoftver NEM tartalmaz és NEM a célja képernyőzár, jelszó vagy más
-hozzáférés-védelem jogosulatlan megkerülése; ilyen célra sem a szoftver, sem a hozzá tartozó
-dokumentáció nem használható fel.
+A szoftver kizárólag olyan Android-eszközök vezérlésére/automatizálására/adatmentésére
+készült, amelyekhez a felhasználó jogszerű hozzáféréssel rendelkezik (saját eszköz, vagy
+arra jogosultsággal bíró eszköz). Ez a hozzáférés kétféleképp állhat fenn:
+
+  a) az eszköz tulajdonosa/kezelője korábban engedélyezte és jóváhagyta az ADB (USB
+     hibakeresés) hozzáférést az adott számítógéphez; VAGY
+  b) az eszköz tulajdonosa/kezelője a szoftver "Rescue mód" funkcióját (pl.
+     `rescue_start_otg`) használja ADB nélkül, saját fizikai USB billentyűzetének/
+     egerének a telefonhoz való, AOA-alapú továbbítására — ez esetben a tulajdonos maga
+     gépeli be a saját, ismert PIN-jét/mintáját; a szoftver ezt semmilyen formában nem
+     próbálja kitalálni, kitalálásban segíteni vagy automatizálni.
+
+A szoftver — beleértve a Rescue módot is — NEM tartalmaz és NEM a célja képernyőzár,
+jelszó vagy más hozzáférés-védelem **jogosulatlan** megkerülése, PIN/minta próbálgatása
+(brute force), sem semmilyen exploit vagy titkosítás-megkerülés; ilyen célra sem a
+szoftver, sem a hozzá tartozó dokumentáció nem használható fel.
 
 7. Szavatosság kizárása
 

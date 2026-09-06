@@ -32,8 +32,11 @@ _CAPABILITY_EXPLANATIONS = {
     ),
     "aoa_hid": (
         "AOAv2 (Android Open Accessory) HID mod - ezzel a szamitogep billentyuzetnek/"
-        "egernek 'adja ki magat' a telefon fele, ADB NELKUL. Csak akkor derul ki "
-        "biztosan, ha a 'rescue_start_otg' tool tenylegesen megprobalja."
+        "egernek 'adja ki magat' a telefon fele, ADB NELKUL. Ha az ADB-n keresztul mar "
+        "kiderult, hogy a telefonnak nincs 'android.hardware.usb.accessory' rendszer-"
+        "kepessege, ez biztosan 'unsupported'. Minden mas esetben (ADB nem elerheto, vagy "
+        "a kepesseg jelen van) csak akkor derul ki biztosan, ha a 'rescue_start_otg' tool "
+        "tenylegesen megprobalja."
     ),
     "wired_video_output": (
         "A telefon kepes-e a sajat kepernyokepet vezetekesen (USB-C -> HDMI/DisplayPort "

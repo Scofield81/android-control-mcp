@@ -1,5 +1,5 @@
 {
-  "_comment": "Bovitheto gyarto/modell kompatibilitasi adatbazis. Minden bejegyzeshez forras + ellenorzes datuma tartozik. Ha egy allitast ebben a fejlesztoi menetben nem tudtunk fuggetlenul, elsodleges forrasbol ujra-ellenorizni, azt 'source' mezoben jeloljuk ('community/scrcpy reports - nincs harmadik felkent ujra-ellenorizve'). Hianyzo modell = 'unknown', SOHA nem talalunk ki tamogatast.",
+  "_comment": "Bovitheto gyarto/modell kompatibilitasi adatbazis. Minden bejegyzeshez forras + ellenorzes datuma tartozik. Ha egy allitast nem tudtunk hivatalos/elsodleges forrasbol ellenorizni, azt a 'source' mezo explicit jelzi. Hianyzo modell = 'unknown' a lookup()-ban, SOHA nem talalunk ki tamogatast.",
   "devices": [
     {
       "manufacturer": "Google",
@@ -9,9 +9,9 @@
       "samsung_dex_wired": "unsupported",
       "samsung_dex_pc": "unsupported",
       "aoa_otg_note": "USB Host/OTG tamogatott, kulon az AOA HID-tol.",
-      "source": "Google hivatalos bejelentes (Android 14 QPR2+, build SQ3A.240605.002+) - androidcentral.com/androidpolice.com 2024-06",
-      "verified_date": "2026-09-06",
-      "note": "Pixel 7 es regebbi NEM tamogatja ezt (csak Pixel 8-tol)."
+      "source": "Google hivatalos funkcio-bevezetes (Android 14 QPR2+, build SQ3A.240605.002+), sajtoval megerositve: androidauthority.com/androidpolice.com 2024-06. Nincs kozvetlen support.google.com dokumentum-URL erre a konkret funkciora.",
+      "verified_date": "2026-09-07",
+      "note": "Pixel 7 es regebbi NEM tamogatja ezt (csak Pixel 8-tol). 'Force desktop mode' a Fejlesztoi beallitasokban ad asztali-szeru elrendezest."
     },
     {
       "manufacturer": "Google",
@@ -21,20 +21,20 @@
       "samsung_dex_wired": "unsupported",
       "samsung_dex_pc": "unsupported",
       "aoa_otg_note": "USB Host/OTG tamogatott, kulon az AOA HID-tol.",
-      "source": "Google hivatalos bejelentes (Android 14 QPR2+) - androidcentral.com 2024-06",
-      "verified_date": "2026-09-06",
+      "source": "Google hivatalos funkcio-bevezetes (Android 14 QPR2+), sajtoval megerositve: androidauthority.com/androidpolice.com 2024-06.",
+      "verified_date": "2026-09-07",
       "note": "Minden Pixel 9 valtozat (alap/Pro/Pro XL/Pro Fold) tamogatja."
     },
     {
       "manufacturer": "Samsung",
-      "model_pattern": "Galaxy S(8|9|10|20|21|22|23)",
+      "model_pattern": "Galaxy S(8|9|10|20|21|22|23|24|25|26)",
       "wired_video_output": "supported",
       "displayport_alt_mode": "supported",
       "samsung_dex_wired": "supported",
       "samsung_dex_pc": "unknown",
       "aoa_otg_note": "USB Host/OTG tamogatott. DeX on PC kulon capability, modellenkent es One UI verziotol fuggoen valtozhat.",
-      "source": "Samsung hivatalos DeX kompatibilitasi dokumentacio - community/scrcpy reports, nincs ebben a menetben egyenkent ujra-ellenorizve",
-      "verified_date": "2026-09-06",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/",
+      "verified_date": "2026-09-07",
       "note": "One UI 7 / Android 15 utani modelleknel a 'DeX on PC' funkcio megszunhetett - a vezetekes DeX (kulso kijelzore) ettol fuggetlen capability, kulon ellenorizendo."
     },
     {
@@ -45,8 +45,68 @@
       "samsung_dex_wired": "supported",
       "samsung_dex_pc": "unknown",
       "aoa_otg_note": "USB Host/OTG tamogatott.",
-      "source": "Samsung hivatalos DeX kompatibilitasi dokumentacio - community/scrcpy reports, nincs ebben a menetben egyenkent ujra-ellenorizve",
-      "verified_date": "2026-09-06",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/",
+      "verified_date": "2026-09-07",
+      "note": ""
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy Z Fold",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "USB Host/OTG tamogatott.",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/ (Fold, Z Fold2-8, Z TriFold)",
+      "verified_date": "2026-09-07",
+      "note": ""
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy Z Flip(7|8)( FE)?",
+      "wired_video_output": "unknown",
+      "displayport_alt_mode": "unknown",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "USB Host/OTG tamogatott.",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/",
+      "verified_date": "2026-09-07",
+      "note": "A Z Flip7 FE es a korabbi Flip-modellek a Samsung sajat listaja szerint NEM kompatibilisek DeX kabellel/HDMI-vel/DeX on PC-vel/vezetek nelkuli DeX-szel - csak a Z Flip7 (nem FE) es Z Flip8 tamogatott."
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy A90",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/",
+      "verified_date": "2026-09-07",
+      "note": ""
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy Tab S(4|5e|6|7|8|9|10|11)",
+      "wired_video_output": "supported",
+      "displayport_alt_mode": "supported",
+      "samsung_dex_wired": "supported",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/",
+      "verified_date": "2026-09-07",
+      "note": "A Tab S9 FE, S9 FE+, S10 FE, S10 FE+ es S10 Lite a Samsung sajat listaja szerint NEM tamogatja a HDMI-kimenetet - lasd kulon bejegyzes."
+    },
+    {
+      "manufacturer": "Samsung",
+      "model_pattern": "Galaxy Tab S(9 FE|10 FE|10 Lite)",
+      "wired_video_output": "unsupported",
+      "displayport_alt_mode": "unsupported",
+      "samsung_dex_wired": "unknown",
+      "samsung_dex_pc": "unknown",
+      "aoa_otg_note": "",
+      "source": "Samsung hivatalos DeX GYIK: https://www.samsung.com/us/support/answer/ANS10001972/ (explicit kizarva a HDMI-kimenetbol)",
+      "verified_date": "2026-09-07",
       "note": ""
     },
     {
@@ -57,8 +117,8 @@
       "samsung_dex_wired": "unsupported",
       "samsung_dex_pc": "unsupported",
       "aoa_otg_note": "USB Host/OTG tamogatott.",
-      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
-      "verified_date": "2026-09-06",
+      "source": "Xiaomi hivatalos GYIK: https://www.mi.com/global/support/faq/details/KA-544001/",
+      "verified_date": "2026-09-07",
       "note": "Xiaomi sajat asztali mod eltero nevvel/keppel a DeX-tol - kulon utananezest igenyel."
     },
     {
@@ -69,32 +129,20 @@
       "samsung_dex_wired": "unsupported",
       "samsung_dex_pc": "unsupported",
       "aoa_otg_note": "USB Host/OTG (AOA HID) tamogatott - CSAK ez, video-kimenet nem.",
-      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
-      "verified_date": "2026-09-06",
+      "source": "Xiaomi hivatalos GYIK: https://www.mi.com/global/support/faq/details/KA-607966/",
+      "verified_date": "2026-09-07",
       "note": "Fontos pelda arra, hogy az OTG-tamogatasbol NEM kovetkezik video-kimenet."
     },
     {
       "manufacturer": "Xiaomi",
-      "model_pattern": "POCO X7",
+      "model_pattern": "POCO X7( Pro)?",
       "wired_video_output": "unsupported",
       "displayport_alt_mode": "unsupported",
       "samsung_dex_wired": "unsupported",
       "samsung_dex_pc": "unsupported",
       "aoa_otg_note": "USB Host/OTG (AOA HID) tamogatott - CSAK ez, video-kimenet nem.",
-      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
-      "verified_date": "2026-09-06",
-      "note": ""
-    },
-    {
-      "manufacturer": "Xiaomi",
-      "model_pattern": "Redmi Note 12",
-      "wired_video_output": "unsupported",
-      "displayport_alt_mode": "unsupported",
-      "samsung_dex_wired": "unsupported",
-      "samsung_dex_pc": "unsupported",
-      "aoa_otg_note": "unknown - egyedi ellenorzest igenyel.",
-      "source": "community/scrcpy reports - nincs ebben a menetben fuggetlenul ujra-ellenorizve",
-      "verified_date": "2026-09-06",
+      "source": "Xiaomi hivatalos GYIK: https://www.mi.com/global/support/faq/details/KA-524823/ (X7), https://www.mi.com/global/support/faq/details/KA-528066/ (X7 Pro)",
+      "verified_date": "2026-09-07",
       "note": ""
     }
   ]

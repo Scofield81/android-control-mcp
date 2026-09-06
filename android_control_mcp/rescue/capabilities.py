@@ -114,8 +114,21 @@ async def probe_capabilities(
         except AdbError as exc:
             report.notes.append(f"ADB lekerdezes sikertelen: {exc}")
 
-        report.usb_host = "supported"  # ha ADB mukodik USB-n, a USB Host/OTG alap mar adott
-        report.usb_accessory = "unknown"  # ehhez kulon, kezzel nem lekerdezheto AOA-teszt kene
+        # FONTOS: az, hogy az ADB mukodik, MAGABAN NEM bizonyitja a USB Host
+        # tamogatast - az ADB mukodhet Wi-Fi-n (vezetek nelkuli hibakereses/
+        # 'adb connect') keresztul is, ahol a telefon USB-portjanak semmi koze
+        # a kapcsolathoz. A tenyleges tamogatast az Android sajat system
+        # feature-listajabol kerdezzuk le ('pm list features').
+        try:
+            features = await run_shell("pm list features", serial=resolved_serial, timeout=10.0)
+            report.usb_host = (
+                "supported" if "android.hardware.usb.host" in features else "unsupported"
+            )
+            report.usb_accessory = (
+                "supported" if "android.hardware.usb.accessory" in features else "unsupported"
+            )
+        except AdbError as exc:
+            report.notes.append(f"'pm list features' lekerdezes sikertelen: {exc}")
     else:
         report.notes.append(
             "ADB nem elerheto/nem engedelyezett - az ADB-fuggo kepessegek (usb_accessory, "
@@ -157,11 +170,15 @@ async def probe_capabilities(
             "Bovitsd a compat/devices.json-t, ha megbizhato forrasod van ra."
         )
 
-    # AOA HID (scrcpy --otg) NEM igenyel ADB-t, csak USB Host/Accessory tamogatast a
-    # telefon oldalan. Ezt PC-oldalrol, tenyleges AOA-kapcsolodasi kiserlet nelkul nem
-    # tudjuk megbizhatoan lekerdezni - marad 'unknown', amig a 'rescue_start_otg' tool
-    # tenylegesen meg nem probalja (annak sikere/hibaja lesz a valodi bizonyitek).
-    report.aoa_hid = "unknown"
+    # AOA HID (scrcpy --otg) NEM igenyel ADB-t, de a telefonnak accessory-mode
+    # (android.hardware.usb.accessory) tamogatasa kell hozza. Ha ADB-n keresztul
+    # MAR bebizonyosodott, hogy ez a feature hianyzik, azt megbizhatoan
+    # 'unsupported'-nak jelezhetjuk - minden mas esetben (ADB nem elerheto, vagy
+    # a feature jelen van) 'unknown' marad, amig a 'rescue_start_otg' tenylegesen
+    # meg nem probalja (annak sikere/hibaja adja a vegleges bizonyitekot, mert
+    # a feature-flag jelenlete nem garantalja, hogy a HID-vezerles gyakorlatban
+    # is mukodik az adott OEM firmware-en).
+    report.aoa_hid = "unsupported" if report.usb_accessory == "unsupported" else "unknown"
 
     report.uvc_capture_available = "unknown"  # PC-oldali USB capture-eszkoz felismerese kulon lepes
 
