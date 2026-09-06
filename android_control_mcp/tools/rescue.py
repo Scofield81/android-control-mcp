@@ -41,7 +41,7 @@ _CAPABILITY_EXPLANATIONS = {
     "wired_video_output": (
         "A telefon kepes-e a sajat kepernyokepet vezetekesen (USB-C -> HDMI/DisplayPort "
         "adapteren) kulso monitorra/TV-re kuldeni. Ez NEM Android-verzio kerdese, hanem "
-        "konkret hardver/modell kepesseg - lasd docs/COMPATIBILITY.md."
+        "konkret hardver/modell kepesseg - lasd docs/reference/COMPATIBILITY.md."
     ),
     "scrcpy_mirror_possible": (
         "Van-e telepitve hivatalos scrcpy A GEPEN, ES van-e mar engedelyezett ADB-"
@@ -120,18 +120,33 @@ def register(mcp) -> None:
         return explanation
 
     @mcp.tool()
-    async def rescue_start_mirror(serial: str | None = None, profile: str = "balanced") -> str:
+    async def rescue_start_mirror(serial: str | None = None, profile: str = "balanced",
+                                   read_only: bool = False, print_fps: bool = False) -> str:
         """Teljes kepernyo-tukrozes es -vezerles inditasa (a hivatalos scrcpy sajat
         ablakaban). ADB-t igenyel, MAR engedelyezett eszkozon.
 
         profile: 'quality', 'balanced', 'low_latency' vagy 'gaming'.
+
+        read_only=True: GARANTALTAN nem tovabbit semmilyen eger/billentyuzet/erintes
+        bemenetet a keszulek fele, es nem szinkronizal vagolapot - kizarolag a keszulek
+        kepenek valos ideju megjelenitesehez, a hivatalos scrcpy sajat, dokumentalt
+        kapcsoloival (--no-control, --no-audio, --no-clipboard-autosync) ervenyesitve.
+        Hasznald ezt, ha CSAK meg akarod nezni a kepernyot, anelkul hogy barmilyen
+        veletlen bemenetet kockaztatnal (pl. masok altal hasznalt keszulek, vagy
+        erzekeny/eppen hasznalatban levo sajat keszulek megfigyelese).
+
+        print_fps=True: a scrcpy sajat --print-fps kapcsoloja - a tenyleges stream
+        frame rate-et irja a folyamat stderr/stdout-jara, nem becslest ad.
         """
         require_mode(Mode.NORMAL, what="scrcpy tukrozo munkamenet inditasa")
         try:
-            sess = await rescue_session.start_mirror_session(serial, profile=profile)
+            sess = await rescue_session.start_mirror_session(
+                serial, profile=profile, read_only=read_only, print_fps=print_fps,
+            )
         except Exception as exc:
             return f"Nem sikerult elinditani: {exc}"
-        return f"Tukrozes elindult (PID {sess.pid}, profil={profile}). Leallitas: 'rescue_stop_session'."
+        mode_note = " [READ-ONLY: nincs input-tovabbitas, nincs vagolap-sync]" if read_only else ""
+        return f"Tukrozes elindult (PID {sess.pid}, profil={profile}).{mode_note} Leallitas: 'rescue_stop_session'."
 
     @mcp.tool()
     async def rescue_start_otg(serial_hint: str | None = None) -> str:
@@ -163,7 +178,11 @@ def register(mcp) -> None:
         lines = []
         for s in sessions:
             state = "fut" if s.is_running() else "leallt"
-            lines.append(f"PID {s.pid} | {s.kind} | profil={s.profile} | serial={s.serial or '-'} | {state}")
+            line = f"PID {s.pid} | {s.kind} | profil={s.profile} | serial={s.serial or '-'} | {state}"
+            fps_line = s.last_fps_line()
+            if fps_line:
+                line += f" | utolso FPS-sor: {fps_line}"
+            lines.append(line)
         return "\n".join(lines)
 
     @mcp.tool()

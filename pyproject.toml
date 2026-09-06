@@ -25,7 +25,7 @@ dev = ["ruff>=0.4", "pytest>=8"]
 ocr = ["pytesseract>=0.3.10", "Pillow>=10"]
 # A Rescue mod NEM igenyel kulon Python csomagot - a hivatalos, aktivan
 # karbantartott Genymobile/scrcpy binarist hasznalja alfolyamatkent (nincs
-# vendorelt/reimplementalt protokoll). Lasd docs/RESCUE.md a telepiteshez.
+# vendorelt/reimplementalt protokoll). Lasd docs/usage/RESCUE.md a telepiteshez.
 
 [project.scripts]
 android-control-mcp = "android_control_mcp.__main__:main"

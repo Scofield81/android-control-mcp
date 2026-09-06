@@ -5,17 +5,27 @@ Ezekben a tesztekben NINCS csatlakoztatott Android eszkoz - ez a
 allapot torott kijelzo/sose engedelyezett ADB eseten. A teszt pontosan azt
 ellenorzi, hogy ilyenkor minden ADB-fuggo mezo 'unknown'/'unavailable'
 marad (SOHA nem talal ki adatot), es a compat_db-bol jovo hint-alapu
-lekerdezes attol meg mukodik."""
+lekerdezes attol meg mukodik.
+
+A ket 'nincs eszkoz' tesztben ezt EXPLICIT MOCK-KAL kenyszeritjuk ki
+('list_devices' -> ures lista), nem a futtato gep tenyleges ADB-allapotara
+tamaszkodva - korabban ezek a tesztek KOZVETLENUL a valodi 'adb devices'
+kimenetre hagyatkoztak, es hamisan elbuktak volna, amint egy valos eszkoz
+csatlakoztatva volt real device teszteles kozben (lasd
+REAL_DEVICE_TESTING.local.md, 2026-09-06)."""
 
 from __future__ import annotations
 
 import asyncio
+from unittest.mock import AsyncMock, patch
 
 from android_control_mcp.rescue.capabilities import probe_capabilities, recommend_path
 
 
 def test_probe_without_any_device_reports_unavailable_adb():
-    report = asyncio.run(probe_capabilities())
+    with patch("android_control_mcp.rescue.capabilities.list_devices",
+               new=AsyncMock(return_value=[])):
+        report = asyncio.run(probe_capabilities())
     assert report.adb_state == "unavailable"
     assert report.adb_authorized == "unknown"
     # ADB nelkul a scrcpy_mirror_possible sem lehet 'supported'.
@@ -23,8 +33,12 @@ def test_probe_without_any_device_reports_unavailable_adb():
 
 
 def test_probe_with_manufacturer_hint_uses_compat_db_even_without_adb():
-    report = asyncio.run(probe_capabilities(manufacturer_hint="Google", model_hint="Pixel 8 Pro"))
-    assert report.adb_state == "unavailable"  # meg mindig nincs eszkoz
+    with patch("android_control_mcp.rescue.capabilities.list_devices",
+               new=AsyncMock(return_value=[])):
+        report = asyncio.run(
+            probe_capabilities(manufacturer_hint="Google", model_hint="Pixel 8 Pro")
+        )
+    assert report.adb_state == "unavailable"  # meg mindig nincs eszkoz (mock-olva)
     assert report.wired_video_output == "supported"  # de a hint alapjan ez mar tudhato
     assert report.compat_source
 

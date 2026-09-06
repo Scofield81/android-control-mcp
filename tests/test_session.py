@@ -91,6 +91,94 @@ def test_start_mirror_session_succeeds_when_process_stays_alive():
         session_module.PROFILES["balanced"] = original
 
 
+def test_read_only_mirror_appends_official_scrcpy_no_input_flags():
+    """read_only=True eseten a valodi, hivatalos scrcpy sajat kapcsoloit kell
+    hasznalni (--no-control/--no-audio/--no-clipboard-autosync) - nem sajat
+    kitalalt flaget. Itt egy fake 'scrcpy'-t (python -c) inditunk, ami csak
+    kiirja a sajat argv-jet, hogy ellenorizhessuk, ezek a kapcsolok tenyleg
+    megjelennek a folyamat parancssoraban."""
+    script = (
+        "import sys, time; print(' '.join(sys.argv[1:]), flush=True); time.sleep(5)"
+    )
+    original = _with_profile(["-c", script])
+
+    async def run():
+        with patch("android_control_mcp.rescue.session.detect_scrcpy",
+                   new=AsyncMock(return_value=_fake_scrcpy_info())):
+            sess = await session_module.start_mirror_session(
+                None, profile="balanced", read_only=True, print_fps=True,
+            )
+            try:
+                assert "--no-control" in sess.args
+                assert "--no-audio" in sess.args
+                assert "--no-clipboard-autosync" in sess.args
+                assert "--print-fps" in sess.args
+                # Adjunk a stdout-pumpanak egy kis idot, hogy elolvassa a sort.
+                await asyncio.sleep(0.3)
+                assert any("--no-control" in line for line in sess.stdout_tail), (
+                    f"A stdout-pumpa nem kapta el a fake-scrcpy sajat argv-jenek "
+                    f"kiirasat: {list(sess.stdout_tail)!r}"
+                )
+            finally:
+                await session_module.stop_session(sess.pid)
+
+    try:
+        asyncio.run(run())
+    finally:
+        session_module.PROFILES["balanced"] = original
+
+
+def test_default_mirror_does_not_add_read_only_flags():
+    """Alapertelmezetten (read_only=False) a normal vezerelt tukrozes NEM kap
+    --no-control-t - ne korlatozzuk veletlenul a normal hasznalatot."""
+    original = _with_profile(["-c", "import time; time.sleep(5)"])
+
+    async def run():
+        with patch("android_control_mcp.rescue.session.detect_scrcpy",
+                   new=AsyncMock(return_value=_fake_scrcpy_info())):
+            sess = await session_module.start_mirror_session(None, profile="balanced")
+            try:
+                assert "--no-control" not in sess.args
+                assert "--print-fps" not in sess.args
+            finally:
+                await session_module.stop_session(sess.pid)
+
+    try:
+        asyncio.run(run())
+    finally:
+        session_module.PROFILES["balanced"] = original
+
+
+def test_last_fps_line_extracts_most_recent_fps_entry():
+    """A stdout-pufferbol a legutolso 'fps'-t tartalmazo sort kell
+    visszaadnia (--print-fps valodi kimenetenek formatuma, pl. '61 fps')."""
+    script = (
+        "import sys, time\n"
+        "print('INFO: Renderer: direct3d11', flush=True)\n"
+        "print('INFO: 48 fps (+17 frames skipped)', flush=True)\n"
+        "print('INFO: 61 fps', flush=True)\n"
+        "time.sleep(5)\n"
+    )
+    original = _with_profile(["-c", script])
+
+    async def run():
+        with patch("android_control_mcp.rescue.session.detect_scrcpy",
+                   new=AsyncMock(return_value=_fake_scrcpy_info())):
+            sess = await session_module.start_mirror_session(
+                None, profile="balanced", print_fps=True,
+            )
+            try:
+                await asyncio.sleep(0.3)
+                assert sess.last_fps_line() == "INFO: 61 fps"
+            finally:
+                await session_module.stop_session(sess.pid)
+
+    try:
+        asyncio.run(run())
+    finally:
+        session_module.PROFILES["balanced"] = original
+
+
 def test_prune_dead_sessions_cleans_up_on_next_start():
     """Egy korabban elhalt session automatikusan eltunik a
     nyilvantartasbol a kovetkezo session-inditaskor."""

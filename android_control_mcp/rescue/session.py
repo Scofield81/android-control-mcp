@@ -40,6 +40,11 @@ eleg hozza - a valos ertek eszkozfuggo, ezt REAL DEVICE TEST-tel erdemes
 finomhangolni."""
 
 _STDERR_TAIL_LINES = 50
+_STDOUT_TAIL_LINES = 50
+"""A scrcpy a --print-fps kimenetet (es az induláskori 'ADB device found'/'Device:'/
+'Texture:' sorokat) STDOUT-ra irja, NEM stderr-re - ezt kulon kell olvasni/pufferelni,
+kulonben nemán elveszne (valos hiba volt, real device teszttel derult ki 2026-09-06-an,
+lasd REAL_DEVICE_TESTING.local.md)."""
 
 
 @dataclass
@@ -50,7 +55,9 @@ class RescueSession:
     profile: str
     args: list[str] = field(default_factory=list)
     stderr_tail: deque[str] = field(default_factory=lambda: deque(maxlen=_STDERR_TAIL_LINES))
+    stdout_tail: deque[str] = field(default_factory=lambda: deque(maxlen=_STDOUT_TAIL_LINES))
     _pump_task: asyncio.Task | None = field(default=None, repr=False)
+    _stdout_pump_task: asyncio.Task | None = field(default=None, repr=False)
 
     @property
     def pid(self) -> int:
@@ -61,6 +68,17 @@ class RescueSession:
 
     def stderr_text(self) -> str:
         return "\n".join(self.stderr_tail)
+
+    def stdout_text(self) -> str:
+        return "\n".join(self.stdout_tail)
+
+    def last_fps_line(self) -> str | None:
+        """A legutobbi 'N fps' sor a stdout-pufferben, ha van (--print-fps
+        eredmenye) - None, ha nincs ilyen sor (pl. print_fps=False volt)."""
+        for line in reversed(self.stdout_tail):
+            if "fps" in line.lower():
+                return line
+        return None
 
 
 _active_sessions: dict[int, RescueSession] = {}
@@ -82,6 +100,21 @@ async def _pump_stderr(session: RescueSession) -> None:
         pass  # a stream lezarasakor/folyamat kilepesekor termeszetes vege
 
 
+async def _pump_stdout(session: RescueSession) -> None:
+    """Folyamatosan olvassa a scrcpy stdout-jat egy korlatozott meretu
+    pufferbe - itt jelenik meg a --print-fps kimenete es az induláskori
+    device-felismeres/render-info, NEM a stderr-en."""
+    if session.process.stdout is None:
+        return
+    try:
+        async for raw_line in session.process.stdout:
+            line = raw_line.decode("utf-8", errors="replace").rstrip()
+            if line:
+                session.stdout_tail.append(line)
+    except Exception:
+        pass  # a stream lezarasakor/folyamat kilepesekor termeszetes vege
+
+
 def _prune_dead_sessions() -> None:
     """A mar nem futo, korabban meg nem takaritott sessionoket eltavolitja a
     nyilvantartasbol - opportunistikus takaritas minden uj session-inditaskor,
@@ -95,10 +128,11 @@ async def _start_and_healthcheck(kind: str, args: list[str], serial: str | None,
     _prune_dead_sessions()
 
     process = await asyncio.create_subprocess_exec(
-        *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
+        *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
     )
     session = RescueSession(kind=kind, process=process, serial=serial, profile=profile, args=args)
     session._pump_task = asyncio.create_task(_pump_stderr(session))
+    session._stdout_pump_task = asyncio.create_task(_pump_stdout(session))
     _active_sessions[process.pid] = session
 
     await asyncio.sleep(_STARTUP_HEALTH_CHECK_DELAY)
@@ -120,10 +154,21 @@ async def _start_and_healthcheck(kind: str, args: list[str], serial: str | None,
 
 
 async def start_mirror_session(serial: str | None, profile: str = "balanced",
-                                scrcpy_path: str | None = None) -> RescueSession:
+                                scrcpy_path: str | None = None, read_only: bool = False,
+                                print_fps: bool = False) -> RescueSession:
     """Teljes kepernyo-tukrozes + vezerles inditasa (ADB-t igenyel, mar
     engedelyezett eszkozon). A scrcpy sajat ablakaban jelenik meg - resize,
     fullscreen, rotation, high-DPI mind a scrcpy sajat, bevalt kezelese.
+
+    read_only=True eseten a scrcpy garantaltan NEM tovabbit semmilyen
+    bemenetet (eger/billentyuzet/erintes) a keszulek fele, es nem szinkronizal
+    vagouasi-lapot - ez a hivatalos scrcpy sajat, dokumentalt kapcsoloival
+    ervenyesitve (`-n/--no-control`, `--no-audio`, `--no-clipboard-autosync`),
+    NEM sajat ujraimplementalassal. Kizarolag a keszulek kepenek valos ideju
+    megjeleniteset teszi lehetove, semmilyen vezerlest.
+
+    print_fps=True eseten a scrcpy sajat `--print-fps` kapcsoloja aktiv - ez a
+    tenyleges stream frame rate-et irja a konzolra, nem egy sajat becsles.
 
     Rovid startup health-check utan ter csak vissza (lasd modul-szintu
     dokumentacio) - igy egy azonnal meghiusulo inditas nem tunik hamisan
@@ -139,6 +184,10 @@ async def start_mirror_session(serial: str | None, profile: str = "balanced",
     if serial:
         args += ["-s", serial]
     args += PROFILES[profile]
+    if read_only:
+        args += ["--no-control", "--no-audio", "--no-clipboard-autosync"]
+    if print_fps:
+        args += ["--print-fps"]
 
     return await _start_and_healthcheck("mirror", args, serial, profile)
 
@@ -188,5 +237,7 @@ async def stop_session(pid: int) -> bool:
             session.process.kill()
     if session._pump_task is not None:
         session._pump_task.cancel()
+    if session._stdout_pump_task is not None:
+        session._stdout_pump_task.cancel()
     del _active_sessions[pid]
     return True

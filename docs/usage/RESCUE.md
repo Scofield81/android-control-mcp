@@ -38,7 +38,7 @@ ezt a program szándékosan nem próbálja megkerülni.
   elérhető, megadhatod kézzel a gyártót/modellt (`manufacturer_hint`/`model_hint`), hogy a
   kompatibilitási adatbázisból legalább a video-kimenet kérdésében választ kapj.
 - **`device_capabilities`** — nyers kapacitás-jelentés (`supported`/`unsupported`/`unknown`
-  minden mezőhöz — lásd [COMPATIBILITY.md](COMPATIBILITY.md)).
+  minden mezőhöz — lásd [COMPATIBILITY.md](../reference/COMPATIBILITY.md)).
 - **`explain_capability`** — egy kapacitás-jelző emberi nyelvű magyarázata.
 - **`rescue_scrcpy_status`** — megtalálható-e a hivatalos scrcpy binárisom a gépen.
 
@@ -75,7 +75,7 @@ rescue_probe(manufacturer_hint="Samsung", model_hint="Galaxy S22")
                                  ha a kijelző még látszik és csak az érintés halott)
 ```
 
-## Nem implementált, tervezett utak (lásd docs/BENCHMARKING.md fázisbeosztás)
+## Nem implementált, tervezett utak (lásd [../development/BENCHMARKING.md](../development/BENCHMARKING.md) fázisbeosztás)
 
 - **UVC capture** (HDMI/DP → USB capture adapter → Windows ablak): P4, nincs implementálva.
   A legtöbb laptop HDMI-portja **kimenet**, nem bemenet — egy telefon HDMI-kimenetét egy

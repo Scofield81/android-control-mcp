@@ -13,3 +13,6 @@ config.json
 *.ab
 *.mp4
 *.png
+
+# Helyi, nem publikus valos-eszkoz teszt-naplo (soha ne kerulj fel GitHub-ra)
+*.local.md

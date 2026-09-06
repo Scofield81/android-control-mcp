@@ -42,7 +42,7 @@ async def do_tap(x: int, y: int, serial: SerialArg) -> str:
 
     (Korabbi verziokban itt volt egy kiserleti, a 'scrcpy-client' PyPI
     csomagot ujrahasznosito gyors-bemenet backend. Ez eltavolitasra kerult:
-    lasd docs/MIRRORING.md "Miert nincs AI-vezerelt gyors input scrcpy-vel"
+    lasd docs/usage/MIRRORING.md "Miert nincs AI-vezerelt gyors input scrcpy-vel"
     szakaszat - a hivatalos scrcpy binaris a SAJAT ablakaba fogadja a fizikai
     ember bemenetet, nem programozott egyedi tap-parancsokat egy scriptbol.)
     """

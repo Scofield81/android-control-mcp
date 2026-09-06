@@ -1,7 +1,9 @@
-# Részletes telepítési útmutató
+# Kézi (manuális) telepítési útmutató
 
-A fő [README](../README.md) a legrövidebb, "van már SSH kulcsom" útvonalat írja le. Ez az
-oldal azoknak szól, akiknek ez nem működött, vagy nem tudják, mi az az SSH kulcs / ADB.
+Ez az oldal a **kézi, parancssoros** telepítési utat írja le, platformtól függetlenül —
+annak, aki maga szeretné végrehajtani a lépéseket (nem az [automatizált Windows
+telepítőt](WINDOWS.md) vagy az [AI-agenttel végzett telepítést](../../INSTALL_WITH_AI.md)
+használja). A fő [README](../../README.md) a leggyorsabb utat írja le.
 
 ## 1. A gép előkészítése
 

@@ -1,8 +1,10 @@
 # Ezeket a linkeket a GitHub a repo "Sponsor" gombja alatt jeleníti meg.
 # Mindhárom valódi, éles Stripe Payment Link (egyszeri, önkéntes támogatás -
 # nem előfizetés, nem termékvásárlás, nem biztosít külön jogosultságot).
+# 2026-09-06: 1000/2000/3000 HUF-ra frissítve (korábbi 1000/1600/3100 HUF
+# linkek közül a 1600/3100-asok deaktiválva a Stripe oldalán, nem törölve).
 custom: [
   "https://donate.stripe.com/00w8wQbRu4Vzfzn3JP38400",
-  "https://donate.stripe.com/14A9AUaNqfAd9aZ6W138401",
-  "https://donate.stripe.com/fZu4gA4p23Rv4UJ5RX38402",
+  "https://donate.stripe.com/eVq5kEf3G3Rv9aZ2FL38403",
+  "https://donate.stripe.com/dRmeVe4p22Nr2MB1BH38404",
 ]

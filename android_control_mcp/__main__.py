@@ -24,7 +24,32 @@ def main() -> None:
         action="store_true",
         help="Kilistazza a csatlakoztatott Android eszkozoket es kilep.",
     )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    doctor_parser = subparsers.add_parser(
+        "doctor", help="PC-oldali diagnosztika (Python/ADB/scrcpy/config/MCP-tool-ok)."
+    )
+    doctor_parser.add_argument("--json", action="store_true", help="Gepi olvashato JSON kimenet.")
+
+    configure_parser = subparsers.add_parser(
+        "configure", help="MCP kliens-konfigurator (VS Code / Claude Code / Generic)."
+    )
+    configure_parser.add_argument("--client", choices=["vscode", "claude-code", "generic", "none"])
+    configure_parser.add_argument("--scope", help="pl. user/project (VS Code), local/project/user (Claude Code)")
+    configure_parser.add_argument("--workspace-dir", help="Workspace/project konyvtar (alap: jelenlegi konyvtar).")
+
     args = parser.parse_args()
+
+    if args.command == "doctor":
+        from .doctor import main_doctor
+
+        sys.exit(main_doctor(as_json=args.json))
+
+    if args.command == "configure":
+        from .cli_configure import main_configure
+
+        sys.exit(main_configure(client=args.client, scope=args.scope, workspace_dir=args.workspace_dir))
 
     if args.devices:
         import asyncio
