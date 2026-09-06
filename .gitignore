@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.ruff_cache/
+.pytest_cache/
+config.json
+*.log
+*.apk
+*.ab
+*.mp4
+*.png

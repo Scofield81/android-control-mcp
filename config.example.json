@@ -1,0 +1,7 @@
+{
+  "mode": "normal",
+  "auto_approve": false,
+  "adb_path": "adb",
+  "default_serial": null,
+  "audit_log": "~/.local/state/android-control-mcp/audit.log"
+}
