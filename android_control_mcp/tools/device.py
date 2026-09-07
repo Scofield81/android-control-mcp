@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..adb import list_devices, resolve_serial, run_shell
+from ..adb import AdbError, list_devices, resolve_serial, run_shell
 from ..config import CONFIG, Mode, level_value
 from ..formatting import parse_key_value_lines
 from .common import SerialArg, dumpsys
@@ -115,7 +115,15 @@ def register(mcp) -> None:
     async def network_status(serial: SerialArg = None) -> str:
         """Halozati allapot: wifi SSID (ha lekerdezheto), IP cim, mobil adat allapota."""
         real_serial = await resolve_serial(serial)
-        ip_out = await run_shell("ip -4 addr show wlan0 2>/dev/null | grep inet", serial=real_serial)
+        try:
+            # A "grep inet" szandekosan nem-nulla kilepesi kodot ad, ha nincs
+            # talalat (pl. a wifi ki van kapcsolva, vagy meg nincs IP-je) - ez
+            # NEM hiba, hanem egy teljesen normal, varhato allapot. Valos
+            # eszkozon (wifi nelkul csatlakoztatva) derult ki, hogy ez
+            # korabban tevesen AdbError-t dobott es az egesz tool-t elbuktatta.
+            ip_out = await run_shell("ip -4 addr show wlan0 2>/dev/null | grep inet", serial=real_serial)
+        except AdbError:
+            ip_out = ""
         wifi_out = await dumpsys("wifi", serial=real_serial, timeout=15.0)
         data = parse_key_value_lines(wifi_out)
         return (
