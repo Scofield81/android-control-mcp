@@ -30,7 +30,7 @@ class ScrcpyInfo:
 def _candidate_paths() -> list[str]:
     """Tipikus telepitesi helyek Windows/macOS/Linux alatt, PATH-on kivul is -
     a scrcpy gyakran egy sima ZIP-bol kicsomagolt mappaban van, nem PATH-ban."""
-    candidates = ["scrcpy"]
+    candidates = []
     local_appdata = os.environ.get("LOCALAPPDATA")
     program_files = os.environ.get("ProgramFiles")
     if local_appdata:

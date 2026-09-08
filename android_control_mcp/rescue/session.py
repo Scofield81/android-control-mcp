@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from contextlib import suppress
 from dataclasses import dataclass, field
 
 from .scrcpy_binary import detect_scrcpy
@@ -91,13 +92,11 @@ async def _pump_stderr(session: RescueSession) -> None:
     kilepesere varva."""
     if session.process.stderr is None:
         return
-    try:
+    with suppress(OSError, RuntimeError, UnicodeDecodeError):
         async for raw_line in session.process.stderr:
             line = raw_line.decode("utf-8", errors="replace").rstrip()
             if line:
                 session.stderr_tail.append(line)
-    except Exception:
-        pass  # a stream lezarasakor/folyamat kilepesekor termeszetes vege
 
 
 async def _pump_stdout(session: RescueSession) -> None:
@@ -106,13 +105,11 @@ async def _pump_stdout(session: RescueSession) -> None:
     device-felismeres/render-info, NEM a stderr-en."""
     if session.process.stdout is None:
         return
-    try:
+    with suppress(OSError, RuntimeError, UnicodeDecodeError):
         async for raw_line in session.process.stdout:
             line = raw_line.decode("utf-8", errors="replace").rstrip()
             if line:
                 session.stdout_tail.append(line)
-    except Exception:
-        pass  # a stream lezarasakor/folyamat kilepesekor termeszetes vege
 
 
 def _prune_dead_sessions() -> None:

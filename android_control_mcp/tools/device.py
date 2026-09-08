@@ -53,8 +53,10 @@ def register(mcp) -> None:
         lines = [
             f"Gyarto/modell: {data.get('ro.product.manufacturer', '?')} {data.get('ro.product.model', '?')}",
             f"Eszkoz/board kodnev: {data.get('ro.product.device', '?')} / {data.get('ro.product.board', '?')}",
-            f"Android verzio: {data.get('ro.build.version.release', '?')} "
-            f"(SDK {data.get('ro.build.version.sdk', '?')})",
+            (
+                f"Android verzio: {data.get('ro.build.version.release', '?')} "
+                f"(SDK {data.get('ro.build.version.sdk', '?')})"
+            ),
             f"Biztonsagi patch: {data.get('ro.build.version.security_patch', '?')}",
             f"Build tipus: {data.get('ro.build.type', '?')} | Display ID: {data.get('ro.build.display.id', '?')}",
             f"CPU ABI: {data.get('ro.product.cpu.abi', '?')}",

@@ -91,7 +91,7 @@ def register(mcp) -> None:
         szamolast. only_interactive=True eseten csak a kattinthato/szerkesztheto
         elemeket mutatja (rovidebb, attekinthetobb valasz).
         """
-        xml_text, real_serial = await fetch_ui_dump_xml(serial)
+        xml_text, _real_serial = await fetch_ui_dump_xml(serial)
         elements = parse_ui_elements(xml_text)
         if only_interactive:
             elements = [e for e in elements if e["clickable"] or e["editable"]]

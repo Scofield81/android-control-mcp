@@ -156,7 +156,7 @@ def register(mcp) -> None:
             try:
                 dims = size_out.strip().split(":")[-1].strip()
                 w, h = (int(v) for v in dims.split("x"))
-            except Exception:
+            except (ValueError, IndexError):
                 w, h = 1080, 1920
             cx = w // 2
             await do_swipe(cx, int(h * 0.75), cx, int(h * 0.25), 300, real_serial)

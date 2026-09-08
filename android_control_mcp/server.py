@@ -62,8 +62,8 @@ def _startup_banner() -> None:
     tool_count = "?"
     try:
         tool_count = len(mcp._tool_manager._tools)  # type: ignore[attr-defined]
-    except Exception:
-        pass
+    except AttributeError:
+        tool_count = "?"
     print(
         f"[android-control-mcp] indul | mod={CONFIG.mode.value.upper()} "
         f"| toolok={tool_count} | config={CONFIG.config_path} "

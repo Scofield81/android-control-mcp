@@ -21,7 +21,7 @@ import sys
 from dataclasses import dataclass, field
 
 from . import __version__
-from .adb import list_devices
+from .adb import AdbError, list_devices
 from .config import CONFIG
 
 
@@ -101,14 +101,14 @@ def _check_mcp_server() -> tuple[str, str, int]:
         tools = mcp._tool_manager._tools  # type: ignore[attr-defined]
         count = len(tools)
         return "ok", f"MCP szerver betoltheto, {count} tool regisztralva.", count
-    except Exception as exc:
+    except (ImportError, AttributeError) as exc:
         return "error", f"MCP szerver betoltese sikertelen: {exc}", 0
 
 
 async def _check_devices() -> tuple[str, str]:
     try:
         devices = await list_devices()
-    except Exception as exc:
+    except AdbError as exc:
         return "warn", f"'adb devices' lekerdezes sikertelen: {exc}"
     if not devices:
         return "info", "NO DEVICE CONNECTED (ez nem hiba - a telepites ettol meg rendben lehet)"

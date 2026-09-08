@@ -148,7 +148,8 @@ ruff check .
 
 **Használat:** [Első lépések](docs/usage/GETTING_STARTED.md) ·
 [MCP kliensek](docs/usage/MCP_CLIENTS.md) · [Rescue mód](docs/usage/RESCUE.md) ·
-[Tükrözés](docs/usage/MIRRORING.md) · [Gaming (roadmap)](docs/usage/GAMING.md)
+[Tükrözés](docs/usage/MIRRORING.md) · [Android 13 / MIUI jegyzetek](docs/usage/ANDROID_13_MIUI_NOTES.md) ·
+[Gaming (roadmap)](docs/usage/GAMING.md)
 
 **Referencia:** [Tool-katalógus](docs/reference/TOOLS.md) ·
 [Konfiguráció](docs/reference/CONFIGURATION.md) ·

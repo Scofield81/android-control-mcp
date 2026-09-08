@@ -68,7 +68,7 @@ def main() -> None:
     if args.list_tools:
         try:
             tools = sorted(mcp._tool_manager._tools)  # type: ignore[attr-defined]
-        except Exception:
+        except AttributeError:
             tools = []
         print(f"{len(tools)} tool:")
         for name in tools:

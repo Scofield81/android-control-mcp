@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 
-from ..adb import resolve_serial, run_shell
+from ..adb import AdbError, resolve_serial, run_shell
 from ..audit import audit
 from ..config import Mode
 from ..permissions import require_mode
@@ -102,7 +102,7 @@ def register(mcp) -> None:
         try:
             dims = size_out.strip().split(":")[-1].strip()
             w, h = (int(v) for v in dims.split("x"))
-        except Exception:
+        except (ValueError, IndexError):
             w, h = 1080, 1920
         cx, cy = w // 2, h // 2
         half = amount // 2
@@ -143,7 +143,7 @@ def register(mcp) -> None:
         paste_ok = True
         try:
             await run_shell("input keyevent KEYCODE_PASTE", serial=real_serial)
-        except Exception:
+        except AdbError:
             paste_ok = False
         audit("type_text", serial=real_serial, length=len(text), method="clipboard_paste")
         if paste_ok:

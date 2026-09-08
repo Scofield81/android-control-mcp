@@ -39,7 +39,7 @@ def _load_db() -> list[DeviceCompatEntry]:
         return []
     try:
         raw = json.loads(_DB_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, json.JSONDecodeError):
         return []
     entries = []
     for item in raw.get("devices", []):

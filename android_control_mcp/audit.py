@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 
 from .config import CONFIG
@@ -19,7 +20,7 @@ _MAX_FILES = 5
 
 
 def _rotate_if_needed(path: Path) -> None:
-    try:
+    with suppress(OSError):
         if not path.exists() or path.stat().st_size < _MAX_BYTES:
             return
         for i in range(_MAX_FILES - 1, 0, -1):
@@ -28,20 +29,16 @@ def _rotate_if_needed(path: Path) -> None:
             if src.exists():
                 src.replace(dst)
         path.replace(path.with_suffix(f"{path.suffix}.1"))
-    except Exception:
-        pass
 
 
 def audit(event: str, **fields: object) -> None:
     record = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "event": event, **fields}
     line = json.dumps(record, ensure_ascii=False)
 
-    try:
+    with suppress(OSError):
         print(f"[audit] {line}", file=sys.stderr, flush=True)
-    except Exception:
-        pass
 
-    try:
+    with suppress(OSError):
         path = CONFIG.audit_log
         if path is None:
             return
@@ -49,5 +46,3 @@ def audit(event: str, **fields: object) -> None:
         _rotate_if_needed(path)
         with path.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except Exception:
-        pass

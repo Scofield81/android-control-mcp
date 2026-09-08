@@ -40,7 +40,7 @@ def ocr_available() -> tuple[bool, str]:
     import pytesseract
     try:
         pytesseract.get_tesseract_version()
-    except Exception:
+    except (pytesseract.TesseractError, OSError, RuntimeError):
         return False, (
             "A pytesseract Python csomag telepitve van, de a Tesseract OCR motor "
             "binarisa nem talalhato a rendszeren. Windows: 'winget install "

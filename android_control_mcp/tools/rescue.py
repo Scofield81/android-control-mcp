@@ -143,7 +143,7 @@ def register(mcp) -> None:
             sess = await rescue_session.start_mirror_session(
                 serial, profile=profile, read_only=read_only, print_fps=print_fps,
             )
-        except Exception as exc:
+        except (OSError, RuntimeError, ValueError) as exc:
             return f"Nem sikerult elinditani: {exc}"
         mode_note = " [READ-ONLY: nincs input-tovabbitas, nincs vagolap-sync]" if read_only else ""
         return f"Tukrozes elindult (PID {sess.pid}, profil={profile}).{mode_note} Leallitas: 'rescue_stop_session'."
@@ -161,7 +161,7 @@ def register(mcp) -> None:
         require_mode(Mode.NORMAL, what="AOA/OTG munkamenet inditasa")
         try:
             sess = await rescue_session.start_otg_session(serial_hint)
-        except Exception as exc:
+        except (OSError, RuntimeError, ValueError) as exc:
             return f"Nem sikerult elinditani: {exc}"
         return (
             f"AOA/OTG munkamenet elindult (PID {sess.pid}). NINCS kep/hang - a sajat "

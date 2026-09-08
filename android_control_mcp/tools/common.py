@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import re
 import shlex
-from typing import Optional
 
 from ..adb import AdbError, NoDeviceError, resolve_serial, run_shell
 from ..permissions import PermissionDenied
 
-SerialArg = Optional[str]
+SerialArg = str | None
 """Minden tool ugyanazt a 'serial' parametert fogadja: melyik eszkozon fusson.
 None eseten a resolve_serial() donti el (config/alapertelmezett/egyetlen eszkoz)."""
 
